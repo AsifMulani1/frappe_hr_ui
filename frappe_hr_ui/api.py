@@ -320,6 +320,106 @@ def _tasks(employee):
 	return out
 
 
+def _tenure(doj):
+	if not doj:
+		return "—"
+	doj = getdate(doj)
+	today = getdate()
+	months = (today.year - doj.year) * 12 + (today.month - doj.month)
+	if today.day < doj.day:
+		months -= 1
+	years, mons = divmod(max(0, months), 12)
+	parts = []
+	if years:
+		parts.append(f"{years} year{'s' if years != 1 else ''}")
+	parts.append(f"{mons} month{'s' if mons != 1 else ''}")
+	return ", ".join(parts)
+
+
+@frappe.whitelist()
+def get_employee_profile():
+	emp = frappe.db.get_value(
+		"Employee", {"user_id": frappe.session.user, "status": "Active"}, "name"
+	)
+	if not emp:
+		return {"employee": None}
+
+	fields = [
+		"name", "employee_number", "salutation", "first_name", "middle_name", "last_name",
+		"employee_name", "designation", "department", "company", "branch", "grade",
+		"employment_type", "date_of_joining", "reports_to", "default_shift", "status",
+		"image", "gender", "date_of_birth", "blood_group", "marital_status",
+		"cell_number", "personal_email", "company_email", "emergency_phone_number",
+		"person_to_be_contacted", "current_address", "permanent_address",
+		"pan_number", "ifsc_code", "provident_fund_account", "bank_name", "bank_ac_no",
+		"salary_mode", "ctc", "holiday_list",
+	]
+	meta = frappe.get_meta("Employee")
+	fields = [f for f in fields if f == "name" or meta.get_field(f)]
+	d = frappe.db.get_value("Employee", emp, fields, as_dict=True)
+
+	d["manager_name"] = (
+		frappe.db.get_value("Employee", d.reports_to, "employee_name") if d.get("reports_to") else None
+	)
+	shift_label, _ = _shift_label(d)
+	d["shift_label"] = shift_label
+	d["location"] = d.get("branch") or "—"
+	d["tenure"] = _tenure(d.get("date_of_joining"))
+
+	# reporting chain (self -> up to top)
+	chain, cur, seen = [], d.get("reports_to"), set()
+	while cur and cur not in seen:
+		seen.add(cur)
+		m = frappe.db.get_value("Employee", cur, ["employee_name", "designation", "employee_number"], as_dict=True)
+		if not m:
+			break
+		chain.append(m)
+		cur = frappe.db.get_value("Employee", cur, "reports_to")
+	d_chain = list(reversed(chain))
+
+	# peers in same department
+	peers = frappe.get_all(
+		"Employee",
+		filters={"department": d.get("department"), "status": "Active", "name": ["!=", emp]},
+		fields=["employee_name", "designation", "employee_number"],
+		limit=8,
+	)
+
+	# documents attached to the employee record
+	files = frappe.get_all(
+		"File",
+		filters={"attached_to_doctype": "Employee", "attached_to_name": emp},
+		fields=["file_name", "file_size", "file_url", "creation"],
+		order_by="creation desc",
+	)
+	documents = [
+		{
+			"name": f.file_name,
+			"size": f"{round((f.file_size or 0) / 1024)} KB",
+			"url": f.file_url,
+		}
+		for f in files
+	]
+
+	# assigned assets (erpnext Asset custodian) — empty unless tracked
+	assets = []
+	if frappe.db.exists("DocType", "Asset"):
+		assets = frappe.get_all(
+			"Asset",
+			filters={"custodian": emp} if meta else {},
+			fields=["asset_name", "name"],
+			limit=10,
+		) if frappe.get_meta("Asset").get_field("custodian") else []
+
+	return {
+		"employee": d,
+		"reporting_line": d_chain,
+		"peers": peers,
+		"documents": documents,
+		"assets": assets,
+	}
+
+
 @frappe.whitelist(methods=["POST"])
 def toggle_checkin():
 	"""Punch the employee in or out for the current day and return today's state."""

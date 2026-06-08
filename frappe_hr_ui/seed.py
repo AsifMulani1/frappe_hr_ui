@@ -218,6 +218,73 @@ def ensure_employees():
     return id_to_name
 
 
+GRADES = ["L1", "L2", "L3", "L4", "L5"]
+
+
+def _grade_for_ctc(ctc):
+    if ctc >= 3500000:
+        return "L5"
+    if ctc >= 2200000:
+        return "L4"
+    if ctc >= 1500000:
+        return "L3"
+    if ctc >= 1000000:
+        return "L2"
+    return "L1"
+
+
+def ensure_grades(id_to_name):
+    for g in GRADES:
+        if not _exists("Employee Grade", g):
+            try:
+                frappe.get_doc({"doctype": "Employee Grade", "__newname": g, "name": g}).insert(ignore_permissions=True)
+            except Exception:
+                frappe.db.rollback()
+    # assign a grade to everyone by CTC tier (helps directory / 360 screens)
+    for (eid, name, desig, dept, loc, status, mgr, etype, ctc, doj) in PEOPLE:
+        dn = id_to_name.get(eid)
+        if dn and _exists("Employee Grade", _grade_for_ctc(ctc)):
+            frappe.db.set_value("Employee", dn, {"grade": _grade_for_ctc(ctc), "ctc": ctc})
+    frappe.db.commit()
+    print("  + Employee Grades ensured + assigned")
+
+
+def ensure_profile_details(id_to_name):
+    """Rich profile for the ESS persona (Aarav) so the profile screen is complete."""
+    a = id_to_name.get("HR-1042")
+    if not a:
+        return
+    vals = {
+        "date_of_birth": "1996-08-14",
+        "gender": "Male",
+        "blood_group": "O+",
+        "marital_status": "Married",
+        "cell_number": "+91 98200 41042",
+        "personal_email": "aarav.m@gmail.com",
+        "emergency_phone_number": "+91 98201 22119",
+        "person_to_be_contacted": "Riya Mehta",
+        "relation": "Spouse",
+        "current_address": "A-1204, Lodha Amara, Thane (W), Mumbai 400607",
+        "permanent_address": "A-1204, Lodha Amara, Thane (W), Mumbai 400607",
+        "bank_name": "HDFC Bank",
+        "bank_ac_no": "50100247701841",
+        "ifsc_code": "HDFC0000234",
+        "pan_number": "ABCPM4521K",
+        "provident_fund_account": "100874512369",
+        "salary_mode": "Bank",
+    }
+    for k, v in list(vals.items()):
+        if not frappe.get_meta("Employee").get_field(k):
+            vals.pop(k, None)
+    try:
+        frappe.db.set_value("Employee", a, vals)
+        frappe.db.commit()
+        print("  + Profile details for Aarav set")
+    except Exception as e:
+        frappe.db.rollback()
+        print(f"    ! profile details: {e}")
+
+
 def ensure_salary_structure(id_to_name):
     earnings = [
         ("Basic", "Earning", "base * 0.40"),
@@ -598,6 +665,8 @@ def run():
     ensure_holiday_assignment(hl)
     ensure_leave_types()
     id_to_name = ensure_employees()
+    ensure_grades(id_to_name)
+    ensure_profile_details(id_to_name)
     ensure_salary_structure(id_to_name)
     ensure_leave_allocations(id_to_name)
     ensure_leave_applications(id_to_name)

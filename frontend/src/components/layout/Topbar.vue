@@ -1,8 +1,9 @@
 <script setup>
 import { computed, inject } from "vue"
 import { useRoute } from "vue-router"
-import { Avatar, Dropdown } from "frappe-ui"
+import { Dropdown } from "frappe-ui"
 import Icon from "@/components/ui/Icon.vue"
+import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
 import { useUiStore } from "@/stores/ui"
 import { session } from "@/data/session"
 
@@ -50,7 +51,7 @@ const userMenu = computed(() => [
       <div class="mx-1.5 h-[22px] w-px bg-outline-gray-1" />
       <Dropdown :options="userMenu" placement="right">
         <button class="flex items-center gap-2 rounded-md py-1 pl-1 pr-2 hover:bg-surface-gray-2">
-          <Avatar :label="fullName" size="sm" />
+          <InitialsAvatar :name="fullName" :size="24" />
           <span class="whitespace-nowrap text-[13px] font-medium text-ink-gray-9">{{ fullName.split(" ")[0] }}</span>
           <Icon name="chevDown" :size="14" class="text-ink-gray-5" />
         </button>

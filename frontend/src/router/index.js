@@ -7,8 +7,13 @@ const routes = [
     name: "EmployeeHome",
     component: () => import("@/pages/EmployeeHome.vue"),
   },
-  // Remaining 49 screens are registered here as they are built, one per the
-  // build plan (ess-profile, ess-attendance, … hr-settings).
+  {
+    path: "/profile",
+    name: "EmployeeProfile",
+    component: () => import("@/pages/EmployeeProfile.vue"),
+  },
+  // Remaining screens are registered here as they are built, one per the
+  // build plan (ess-attendance, ess-leave, … hr-settings).
 ]
 
 const router = createRouter({

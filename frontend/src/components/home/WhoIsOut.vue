@@ -1,7 +1,7 @@
 <script setup>
-import { Avatar } from "frappe-ui"
 import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
+import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
 
 defineProps({ people: { type: Array, default: () => [] } })
 </script>
@@ -11,7 +11,7 @@ defineProps({ people: { type: Array, default: () => [] } })
     <CardHeader title="Who's out today" :sub="`${people.length} away`" />
     <div v-if="people.length" class="flex flex-col gap-3">
       <div v-for="(p, i) in people" :key="i" class="flex items-center gap-2.5">
-        <Avatar :label="p.name" size="md" />
+        <InitialsAvatar :name="p.name" :size="32" />
         <div class="min-w-0 flex-1">
           <div class="truncate text-[13px] font-medium text-ink-gray-9">{{ p.name }}</div>
           <div class="text-[11.5px] text-ink-gray-5">{{ p.note }}</div>

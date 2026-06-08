@@ -9,7 +9,7 @@ export const NAV = {
     sub: "Self-service",
     items: [
       { id: "ess-home", label: "Home", icon: "home", route: "EmployeeHome" },
-      { id: "ess-profile", label: "My profile", icon: "user" },
+      { id: "ess-profile", label: "My profile", icon: "user", route: "EmployeeProfile" },
       { id: "ess-attendance", label: "Attendance", icon: "calcheck" },
       { id: "ess-leave", label: "Leave", icon: "calendar" },
       { id: "ess-payslip", label: "Payslips", icon: "file" },
