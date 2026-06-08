@@ -256,3 +256,10 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+
+# Website
+# -------
+# Serve the desktop SPA at /people and rewrite client-side deep links to it.
+website_route_rules = [
+	{"from_route": "/people/<path:app_path>", "to_route": "people"},
+]
