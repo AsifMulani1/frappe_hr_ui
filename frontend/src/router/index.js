@@ -7,13 +7,27 @@ const routes = [
     name: "EmployeeHome",
     component: () => import("@/pages/EmployeeHome.vue"),
   },
+  { path: "/profile", name: "EmployeeProfile", component: () => import("@/pages/EmployeeProfile.vue") },
+  { path: "/attendance", name: "EssAttendance", component: () => import("@/pages/EssAttendance.vue") },
+  { path: "/leave", name: "EssLeave", component: () => import("@/pages/EssLeave.vue") },
+  { path: "/payslips", name: "EssPayslip", component: () => import("@/pages/EssPayslip.vue") },
+  { path: "/tax", name: "EssTax", component: () => import("@/pages/EssTax.vue") },
   {
-    path: "/profile",
-    name: "EmployeeProfile",
-    component: () => import("@/pages/EmployeeProfile.vue"),
+    path: "/reimbursements", name: "EssReimburse",
+    component: () => import("@/pages/ClaimsView.vue"),
+    props: { title: "Reimbursements", subtitle: "Claim work expenses paid out of pocket", addLabel: "New reimbursement" },
   },
-  // Remaining screens are registered here as they are built, one per the
-  // build plan (ess-attendance, ess-leave, … hr-settings).
+  {
+    path: "/expenses", name: "EssExpense",
+    component: () => import("@/pages/ClaimsView.vue"),
+    props: { title: "Expenses & advances", subtitle: "Submit travel expenses and request salary advances", addLabel: "New expense claim" },
+  },
+  { path: "/performance", name: "EssPerformance", component: () => import("@/pages/EssPerformance.vue") },
+  { path: "/helpdesk", name: "EssHelpdesk", component: () => import("@/pages/EssHelpdesk.vue") },
+  { path: "/directory", name: "EssDirectory", component: () => import("@/pages/EssDirectory.vue") },
+  { path: "/announcements", name: "EssAnnouncements", component: () => import("@/pages/EssAnnouncements.vue") },
+
+  { path: "/screen/:id", name: "ComingSoon", component: () => import("@/pages/ComingSoon.vue") },
 ]
 
 const router = createRouter({

@@ -468,12 +468,31 @@ def ensure_salary_slips(id_to_name):
     print(f"  + Salary Slips (May 2026): {made} created")
 
 
+def _expense_account():
+    return frappe.db.get_value(
+        "Account",
+        {"company": COMPANY, "account_type": "Expense Account", "is_group": 0},
+        "name",
+    ) or frappe.db.get_value("Account", {"company": COMPANY, "root_type": "Expense", "is_group": 0}, "name")
+
+
 def ensure_expense_claims(id_to_name):
-    for t in ["Travel", "Internet", "Food", "Conveyance"]:
+    acct = _expense_account()
+    for t in ["Travel", "Internet", "Food", "Conveyance", "Wellness", "Learning"]:
         if not frappe.db.exists("Expense Claim Type", t):
             try:
-                frappe.get_doc({"doctype": "Expense Claim Type", "expense_type": t,
-                                "expense_account": None}).insert(ignore_permissions=True)
+                doc = {"doctype": "Expense Claim Type", "expense_type": t}
+                if acct:
+                    doc["accounts"] = [{"company": COMPANY, "default_account": acct}]
+                frappe.get_doc(doc).insert(ignore_permissions=True)
+            except Exception as e:
+                frappe.db.rollback()
+                print(f"    ! expense type {t}: {e}")
+        elif acct and not frappe.db.exists("Expense Claim Account", {"parent": t, "company": COMPANY}):
+            try:
+                ect = frappe.get_doc("Expense Claim Type", t)
+                ect.append("accounts", {"company": COMPANY, "default_account": acct})
+                ect.save(ignore_permissions=True)
             except Exception:
                 frappe.db.rollback()
     rows = [
@@ -633,6 +652,59 @@ def ensure_announcements():
     print(f"  + Announcements (Notes): {len(ANNOUNCEMENTS)} ensured")
 
 
+def ensure_issues(id_to_name):
+    """Helpdesk tickets as Issues raised by Aarav."""
+    tickets = [
+        ("Discrepancy in May payslip PF deduction", "Open", "Medium"),
+        ("Request experience letter for visa", "Closed", "Low"),
+        ("Unable to access learning portal", "Open", "High"),
+    ]
+    for subj, status, prio in tickets:
+        if frappe.db.exists("Issue", {"subject": subj}):
+            continue
+        try:
+            frappe.get_doc({
+                "doctype": "Issue", "subject": subj, "raised_by": "aarav.mehta@frappe.io",
+                "status": status, "priority": prio,
+            }).insert(ignore_permissions=True)
+        except Exception as e:
+            frappe.db.rollback()
+            print(f"    ! issue {subj}: {e}")
+    frappe.db.commit()
+    print("  + Helpdesk Issues ensured")
+
+
+def ensure_appraisal(id_to_name):
+    """Best-effort: a cycle + appraisal with KRAs for Aarav so Performance has data."""
+    a = id_to_name.get("HR-1042")
+    if not a or not frappe.db.exists("DocType", "Appraisal Cycle"):
+        return
+    cycle = "H1 2026"
+    try:
+        if not frappe.db.exists("Appraisal Cycle", cycle):
+            frappe.get_doc({
+                "doctype": "Appraisal Cycle", "cycle_name": cycle, "company": COMPANY,
+                "start_date": "2026-01-01", "end_date": "2026-06-30",
+            }).insert(ignore_permissions=True)
+        if not frappe.db.exists("Appraisal", {"employee": a, "appraisal_cycle": cycle}):
+            ap = frappe.get_doc({
+                "doctype": "Appraisal", "employee": a, "appraisal_cycle": cycle, "company": COMPANY,
+                "goals": [
+                    {"kra": "Ship attendance regularization v2", "per_weightage": 30, "score": 3.75},
+                    {"kra": "Reduce payroll page load to < 1.5s", "per_weightage": 25, "score": 3.0},
+                    {"kra": "Mentor 2 junior engineers", "per_weightage": 20, "score": 4.5},
+                    {"kra": "Improve test coverage to 80%", "per_weightage": 15, "score": 2.0},
+                    {"kra": "Contribute 3 design-system components", "per_weightage": 10, "score": 1.65},
+                ],
+            })
+            ap.insert(ignore_permissions=True)
+        frappe.db.commit()
+        print("  + Appraisal (Aarav, H1 2026) ensured")
+    except Exception as e:
+        frappe.db.rollback()
+        print(f"    ! appraisal: {e}")
+
+
 def ensure_lifecycle(id_to_name):
     manish = id_to_name.get("HR-1301")
     kavya = id_to_name.get("HR-1356")
@@ -675,6 +747,8 @@ def run():
     ensure_expense_claims(id_to_name)
     ensure_recruitment()
     ensure_announcements()
+    ensure_issues(id_to_name)
+    ensure_appraisal(id_to_name)
     ensure_lifecycle(id_to_name)
     ensure_users(id_to_name)
     frappe.db.commit()

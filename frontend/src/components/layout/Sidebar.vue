@@ -27,11 +27,11 @@ function navItems(c) {
 
 function go(item) {
   if (item.route) router.push({ name: item.route })
-  // Items without a built route yet are inert until that screen ships.
+  else router.push(`/screen/${item.id}`)
 }
 
 function isActive(item) {
-  return item.route && route.name === item.route
+  return (item.route && route.name === item.route) || route.params.id === item.id
 }
 </script>
 
