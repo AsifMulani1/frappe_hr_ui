@@ -1,39 +1,116 @@
 <script setup>
-import { inject } from "vue"
-import { createResource } from "frappe-ui"
+import { computed, inject } from "vue"
+import { Button, createResource } from "frappe-ui"
+import Icon from "@/components/ui/Icon.vue"
+import CheckinHero from "@/components/home/CheckinHero.vue"
+import LeaveBalanceCard from "@/components/home/LeaveBalanceCard.vue"
+import QuickActions from "@/components/home/QuickActions.vue"
+import TasksCard from "@/components/home/TasksCard.vue"
+import AnnouncementsCard from "@/components/home/AnnouncementsCard.vue"
+import PayslipMini from "@/components/home/PayslipMini.vue"
+import WhoIsOut from "@/components/home/WhoIsOut.vue"
+import HolidaysCard from "@/components/home/HolidaysCard.vue"
+import CelebrationsCard from "@/components/home/CelebrationsCard.vue"
+import { useEmployeeHome } from "@/composables/useEmployeeHome"
 
-// Placeholder for screen 1 (Employee home dashboard). This proves the full
-// stack end-to-end — session, frappe-ui resources, ₹ data, routing — and is
-// replaced by the faithful ess_home.jsx reproduction in the next step.
-const user = inject("$user")
+const dayjs = inject("$dayjs")
+const home = useEmployeeHome()
 
-const stats = createResource({
-  url: "frappe.client.get_count",
-  params: { doctype: "Employee" },
-  auto: true,
+const d = computed(() => home.data || {})
+const emp = computed(() => d.value.employee)
+
+const greeting = computed(() => {
+  const h = dayjs().hour()
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"
 })
+const dateLine = computed(() => {
+  const parts = [dayjs().format("dddd, D MMMM YYYY")]
+  if (emp.value?.location) parts.push(emp.value.location)
+  if (emp.value?.shift_label) parts.push(emp.value.shift_label)
+  return parts.join(" · ")
+})
+
+const headerToggle = createResource({
+  url: "frappe_hr_ui.api.toggle_checkin",
+  onSuccess: () => home.reload(),
+})
+const checkedIn = computed(() => d.value.today?.checked_in)
 </script>
 
 <template>
-  <div class="mx-auto max-w-[1320px] px-6 py-6">
-    <h1 class="text-[22px] font-medium tracking-tight text-ink-gray-9">
-      Good morning{{ user?.data?.full_name ? `, ${user.data.full_name.split(" ")[0]}` : "" }}
-    </h1>
-    <p class="mt-1 text-[13.5px] text-ink-gray-5">
-      Frappe HR UI is wired up and serving from <code>/hr</code>.
-    </p>
-
-    <div class="mt-5 rounded-[10px] border border-outline-gray-1 bg-surface-white p-5 shadow-sm">
-      <div class="text-[15px] font-medium text-ink-gray-9">Setup verified</div>
-      <p class="mt-1 text-[13px] text-ink-gray-6">
-        Live data from the seeded site:
-        <span class="font-medium text-ink-gray-9 tnum">{{ stats.data ?? "…" }}</span>
-        employees in the directory.
-      </p>
-      <p class="mt-3 text-[12.5px] text-ink-gray-5">
-        Screen 1 (employee home dashboard) is built next as a faithful
-        reproduction of <code>ess_home.jsx</code>.
-      </p>
+  <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
+    <!-- loading -->
+    <div v-if="home.loading && !home.data" class="flex h-[60vh] items-center justify-center text-ink-gray-5">
+      <div class="flex items-center gap-2 text-[13px]">
+        <Icon name="dot" :size="18" class="animate-pulse" /> Loading your dashboard…
+      </div>
     </div>
+
+    <!-- error -->
+    <div v-else-if="home.error" class="flex h-[60vh] flex-col items-center justify-center gap-2 text-center">
+      <div class="text-[15px] font-medium text-ink-gray-8">Couldn't load your dashboard</div>
+      <div class="max-w-md text-[13px] text-ink-gray-5">{{ home.error.messages?.[0] || home.error }}</div>
+      <Button class="mt-2" variant="subtle" theme="gray" label="Retry" @click="home.reload()" />
+    </div>
+
+    <!-- no employee linked -->
+    <div v-else-if="!emp" class="flex h-[60vh] flex-col items-center justify-center gap-2 text-center">
+      <Icon name="user" :size="26" class="text-ink-gray-4" />
+      <div class="text-[15px] font-medium text-ink-gray-8">No employee record linked</div>
+      <div class="max-w-md text-[13px] text-ink-gray-5">
+        This user isn't linked to an Employee. Sign in as an employee (e.g. aarav.mehta@frappe.io)
+        to see the self-service dashboard.
+      </div>
+    </div>
+
+    <!-- dashboard -->
+    <template v-else>
+      <div class="mb-[18px] flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 class="text-[22px] font-medium tracking-tight text-ink-gray-9">
+            {{ greeting }}, {{ emp.first_name || emp.employee_name }}
+          </h1>
+          <div class="mt-1 text-[13.5px] text-ink-gray-5">{{ dateLine }}</div>
+        </div>
+        <div class="flex gap-2">
+          <Button variant="outline" theme="gray" label="Apply for leave">
+            <template #prefix><Icon name="calendar" :size="15" /></template>
+          </Button>
+          <Button
+            variant="solid"
+            theme="gray"
+            :loading="headerToggle.loading"
+            :label="checkedIn ? 'Check out' : 'Check in'"
+            @click="headerToggle.submit()"
+          >
+            <template #prefix><Icon :name="checkedIn ? 'logout' : 'login'" :size="15" /></template>
+          </Button>
+        </div>
+      </div>
+
+      <div class="grid items-start gap-5" style="grid-template-columns: minmax(0, 1fr) 312px">
+        <div class="flex flex-col gap-5">
+          <CheckinHero
+            :today="d.today"
+            :week="d.week"
+            :summary="d.attendance_summary"
+            :shift="emp.shift_label"
+            :on-reload="() => home.reload()"
+          />
+          <LeaveBalanceCard :balances="d.leave_balance || []" />
+          <QuickActions />
+          <div class="grid grid-cols-2 gap-5">
+            <TasksCard :tasks="d.tasks || []" />
+            <AnnouncementsCard :announcements="d.announcements || []" />
+          </div>
+        </div>
+        <div class="flex flex-col gap-5">
+          <PayslipMini :payslip="d.latest_payslip" />
+          <WhoIsOut :people="d.who_is_out || []" />
+          <HolidaysCard :holidays="d.holidays || []" />
+          <CelebrationsCard :celebrations="d.celebrations || []" />
+        </div>
+      </div>
+    </template>
   </div>
 </template>

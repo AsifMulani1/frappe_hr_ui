@@ -324,6 +324,19 @@ def ensure_leave_applications(id_to_name):
         dn = id_to_name.get(eid)
         if dn:
             _leave_app(dn, lt, frm, to, st, rsn)
+
+    # A few approved leaves spanning the actual current day so the "who's out"
+    # card always reflects real, present-day absences.
+    today = getdate()
+    near = [
+        ("HR-1067", "Sick Leave",   add_days(today, -1), add_days(today, 1)),
+        ("HR-1102", "Casual Leave", today,               add_days(today, 2)),
+        ("HR-1334", "Earned Leave", add_days(today, -2), today),
+    ]
+    for eid, lt, frm, to in near:
+        dn = id_to_name.get(eid)
+        if dn:
+            _leave_app(dn, lt, str(frm), str(to), "Approved", "Planned time off")
     frappe.db.commit()
     print("  + Leave Applications ensured")
 
@@ -348,8 +361,13 @@ def ensure_attendance(id_to_name):
             d += timedelta(days=1)
     A = id_to_name.get("HR-1042")
     if A:
-        for dt, log in [("2026-06-01 10:04:00", "IN"), ("2026-06-01 19:12:00", "OUT"),
-                        ("2026-06-02 09:58:00", "IN")]:
+        checkins = [("2026-06-01 10:04:00", "IN"), ("2026-06-01 19:12:00", "OUT"),
+                    ("2026-06-02 09:58:00", "IN")]
+        # An open check-in for the actual current day so the home "today's
+        # attendance" hero reflects a live, checked-in state on any run date.
+        today = nowdate()
+        checkins.append((f"{today} 09:58:00", "IN"))
+        for dt, log in checkins:
             if not frappe.db.exists("Employee Checkin", {"employee": A, "time": dt}):
                 try:
                     frappe.get_doc({"doctype": "Employee Checkin", "employee": A,
@@ -470,6 +488,84 @@ def ensure_recruitment():
     print("  + Recruitment (openings, applicants, offers) ensured")
 
 
+# Persona logins: (employee_id, email, password, [roles]). Lets you sign in as
+# the ESS persona (Aarav), a manager (Devika), and an HR admin to see each
+# role's workspace against real data.
+PERSONA_USERS = [
+    ("HR-1042", "aarav.mehta@frappe.io", "Frappe@123", ["Employee"]),
+    ("HR-1001", "devika.rao@frappe.io", "Frappe@123", ["Employee", "Leave Approver", "Expense Approver"]),
+    ("HR-1203", "fatima.sheikh@frappe.io", "Frappe@123", ["Employee", "HR Manager", "HR User"]),
+]
+
+
+def ensure_users(id_to_name):
+    for eid, email, pwd, roles in PERSONA_USERS:
+        docname = id_to_name.get(eid)
+        if not docname:
+            continue
+        first = frappe.db.get_value("Employee", docname, "first_name")
+        valid_roles = [r for r in roles if frappe.db.exists("Role", r)]
+        if not frappe.db.exists("User", email):
+            try:
+                u = frappe.get_doc({
+                    "doctype": "User",
+                    "email": email,
+                    "first_name": first or email.split("@")[0],
+                    "send_welcome_email": 0,
+                    "new_password": pwd,
+                })
+                u.flags.no_welcome_mail = True
+                u.insert(ignore_permissions=True)
+                # add_roles persists reliably; assigning the child table on insert
+                # does not always stick for a brand-new user.
+                u.add_roles(*valid_roles)
+            except Exception as e:
+                frappe.db.rollback()
+                print(f"    ! user {email}: {e}")
+                continue
+        else:
+            try:
+                from frappe.utils.password import update_password
+                update_password(email, pwd)
+                frappe.get_doc("User", email).add_roles(*valid_roles)
+            except Exception as e:
+                frappe.db.rollback()
+                print(f"    ! user sync {email}: {e}")
+        # link employee <-> user
+        if frappe.db.get_value("Employee", docname, "user_id") != email:
+            frappe.db.set_value("Employee", docname, "user_id", email)
+    frappe.db.commit()
+    print(f"  + Persona users: {len(PERSONA_USERS)} ensured (password: Frappe@123)")
+
+
+ANNOUNCEMENTS = [
+    ("Updated work-from-home policy effective 1 July",
+     "We're moving to a 3-days-in-office model for all Mumbai and Bengaluru teams starting 1 July 2026. Tuesdays and Thursdays are anchor days; the third day is flexible. Remote-first roles are unaffected."),
+    ("May payslips released - investment proofs open",
+     "Your May 2026 payslip is now available under Payslips. The window to submit investment proofs for FY 2025-26 is open until 31 December. Submitting early helps spread your TDS evenly."),
+    ("Quarterly town hall - Saturday 6 June, 4:00 PM",
+     "Join us for the Q1 review and product roadmap. In-person at the Mumbai office auditorium, or on the livestream for remote teammates. We'll close with an open AMA."),
+    ("New mental wellness benefit - 6 free therapy sessions",
+     "We've partnered with a wellness provider to offer every employee 6 confidential counselling sessions per year, fully covered. Book directly through the benefits portal."),
+]
+
+
+def ensure_announcements():
+    for title, body in ANNOUNCEMENTS:
+        if frappe.db.exists("Note", {"title": title}):
+            continue
+        try:
+            frappe.get_doc({
+                "doctype": "Note", "title": title, "public": 1,
+                "content": f"<div>{body}</div>",
+            }).insert(ignore_permissions=True)
+        except Exception as e:
+            frappe.db.rollback()
+            print(f"    ! note {title}: {e}")
+    frappe.db.commit()
+    print(f"  + Announcements (Notes): {len(ANNOUNCEMENTS)} ensured")
+
+
 def ensure_lifecycle(id_to_name):
     manish = id_to_name.get("HR-1301")
     kavya = id_to_name.get("HR-1356")
@@ -509,6 +605,8 @@ def run():
     ensure_salary_slips(id_to_name)
     ensure_expense_claims(id_to_name)
     ensure_recruitment()
+    ensure_announcements()
     ensure_lifecycle(id_to_name)
+    ensure_users(id_to_name)
     frappe.db.commit()
-    print("Done. Login as Administrator and open /people")
+    print("Done. Sign in as aarav.mehta@frappe.io / Frappe@123 and open /people")
