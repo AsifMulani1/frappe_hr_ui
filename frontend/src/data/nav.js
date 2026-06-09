@@ -26,12 +26,12 @@ export const NAV = {
     label: "Manager",
     sub: "Team",
     items: [
-      { id: "mgr-dashboard", label: "Team dashboard", icon: "home" },
-      { id: "mgr-approvals", label: "Approvals", icon: "inbox", badge: 6 },
-      { id: "mgr-attendance", label: "Team attendance", icon: "calcheck" },
-      { id: "mgr-leave", label: "Team leave", icon: "calendar" },
-      { id: "mgr-performance", label: "Team performance", icon: "target" },
-      { id: "mgr-orgchart", label: "Org chart", icon: "users" },
+      { id: "mgr-dashboard", label: "Team dashboard", icon: "home", route: "MgrDashboard" },
+      { id: "mgr-approvals", label: "Approvals", icon: "inbox", route: "MgrApprovals" },
+      { id: "mgr-attendance", label: "Team attendance", icon: "calcheck", route: "MgrAttendance" },
+      { id: "mgr-leave", label: "Team leave", icon: "calendar", route: "MgrLeave" },
+      { id: "mgr-performance", label: "Team performance", icon: "target", route: "MgrPerformance" },
+      { id: "mgr-orgchart", label: "Org chart", icon: "users", route: "MgrOrgChart" },
     ],
   },
   hr: {

@@ -27,6 +27,14 @@ const routes = [
   { path: "/directory", name: "EssDirectory", component: () => import("@/pages/EssDirectory.vue") },
   { path: "/announcements", name: "EssAnnouncements", component: () => import("@/pages/EssAnnouncements.vue") },
 
+  // Manager
+  { path: "/team", name: "MgrDashboard", component: () => import("@/pages/MgrDashboard.vue") },
+  { path: "/approvals", name: "MgrApprovals", component: () => import("@/pages/MgrApprovals.vue") },
+  { path: "/team-attendance", name: "MgrAttendance", component: () => import("@/pages/MgrAttendance.vue") },
+  { path: "/team-leave", name: "MgrLeave", component: () => import("@/pages/MgrLeave.vue") },
+  { path: "/team-performance", name: "MgrPerformance", component: () => import("@/pages/MgrPerformance.vue") },
+  { path: "/org-chart", name: "MgrOrgChart", component: () => import("@/pages/MgrOrgChart.vue") },
+
   { path: "/screen/:id", name: "ComingSoon", component: () => import("@/pages/ComingSoon.vue") },
 ]
 

@@ -410,7 +410,9 @@ def ensure_leave_applications(id_to_name):
 
 def ensure_attendance(id_to_name):
     from datetime import timedelta
-    start, end = getdate("2026-05-18"), getdate("2026-06-01")
+    # Fill attendance from mid-May through the actual current day so team and
+    # company attendance screens always have present-day data.
+    start, end = getdate("2026-05-18"), getdate(nowdate())
     for eid, docname in id_to_name.items():
         d = start
         while d <= end:
