@@ -424,6 +424,32 @@ def _emp():
 	return frappe.db.get_value("Employee", {"user_id": frappe.session.user, "status": "Active"}, "name")
 
 
+HR_ROLES = ("HR Manager", "HR User", "System Manager")
+
+
+def _require(*roles):
+	"""Block the call unless the session user holds one of the given roles."""
+	if frappe.session.user == "Administrator":
+		return
+	if not (set(roles) & set(frappe.get_roles())):
+		frappe.throw(frappe._("You are not permitted to access this resource."), frappe.PermissionError)
+
+
+def _require_hr():
+	_require(*HR_ROLES)
+
+
+def _require_manager():
+	"""HR, or anyone who actually manages people / approves requests."""
+	roles = set(frappe.get_roles())
+	if set(HR_ROLES) & roles or {"Leave Approver", "Expense Approver"} & roles:
+		return
+	emp = _emp()
+	if emp and frappe.db.exists("Employee", {"reports_to": emp, "status": ["!=", "Left"]}):
+		return
+	frappe.throw(frappe._("You are not permitted to access this resource."), frappe.PermissionError)
+
+
 # ---------------------------------------------------------------- attendance
 @frappe.whitelist()
 def get_employee_attendance():
@@ -573,9 +599,10 @@ def get_directory():
 		order_by="employee_name asc",
 		limit=999,
 	)
+	name_map = {e.name: e.employee_name for e in frappe.get_all("Employee", fields=["name", "employee_name"], limit=0)}
 	for p in people:
 		p["location"] = p.get("branch") or "—"
-		p["manager_name"] = frappe.db.get_value("Employee", p.reports_to, "employee_name") if p.get("reports_to") else "—"
+		p["manager_name"] = name_map.get(p.reports_to, "—") if p.get("reports_to") else "—"
 	depts = sorted({p["department"] for p in people if p.get("department")})
 	return {"people": people, "departments": depts}
 
@@ -800,6 +827,7 @@ def _pending_approvals(manager, manager_emp):
 
 @frappe.whitelist()
 def get_team_overview():
+	_require_manager()
 	mgr = _current_employee()
 	if not mgr:
 		return {"manager": None}
@@ -829,6 +857,7 @@ def get_team_overview():
 
 @frappe.whitelist()
 def get_team_approvals():
+	_require_manager()
 	mgr = _current_employee()
 	if not mgr:
 		return {"items": []}
@@ -837,6 +866,9 @@ def get_team_approvals():
 
 @frappe.whitelist(methods=["POST"])
 def act_on_approval(kind, name, action):
+	_require_manager()
+	if action not in ("approve", "reject"):
+		frappe.throw("Invalid action")
 	doc = frappe.get_doc("Leave Application" if kind == "Leave" else "Expense Claim", name)
 	if kind == "Leave":
 		doc.status = "Approved" if action == "approve" else "Rejected"
@@ -852,6 +884,7 @@ def act_on_approval(kind, name, action):
 
 @frappe.whitelist()
 def get_team_attendance():
+	_require_manager()
 	mgr = _current_employee()
 	if not mgr:
 		return {"team": []}
@@ -870,6 +903,7 @@ def get_team_attendance():
 
 @frappe.whitelist()
 def get_team_leave():
+	_require_manager()
 	mgr = _current_employee()
 	if not mgr:
 		return {"team": [], "leave_map": {}}
@@ -904,6 +938,7 @@ def get_team_leave():
 
 @frappe.whitelist()
 def get_team_performance():
+	_require_manager()
 	mgr = _current_employee()
 	if not mgr:
 		return {"team": []}
@@ -945,6 +980,7 @@ def COMPANY_NAME():
 
 @frappe.whitelist()
 def get_hr_dashboard():
+	_require_hr()
 	company = COMPANY_NAME()
 	active = frappe.db.count("Employee", {"status": "Active"})
 	depts = {}
@@ -981,6 +1017,7 @@ def get_hr_dashboard():
 
 @frappe.whitelist()
 def get_hr_directory():
+	_require_hr()
 	people = frappe.get_all(
 		"Employee",
 		filters={"status": ["!=", "Left"]},
@@ -1002,6 +1039,7 @@ def get_hr_directory():
 
 @frappe.whitelist()
 def get_employee_360(name):
+	_require_hr()
 	e = frappe.db.get_value("Employee", name, "*", as_dict=True)
 	if not e:
 		return {"employee": None}
@@ -1020,6 +1058,7 @@ def get_employee_360(name):
 
 @frappe.whitelist()
 def get_onboarding():
+	_require_hr()
 	today = getdate()
 	# new joiners in a 120-day window around today
 	hires = frappe.get_all("Employee",
@@ -1035,6 +1074,7 @@ def get_onboarding():
 
 @frappe.whitelist()
 def get_transfers():
+	_require_hr()
 	rows = []
 	if frappe.db.exists("DocType", "Employee Promotion"):
 		for p in frappe.get_all("Employee Promotion", fields=["employee_name", "promotion_date"], limit=50):
@@ -1047,6 +1087,7 @@ def get_transfers():
 
 @frappe.whitelist()
 def get_separation():
+	_require_hr()
 	today = getdate()
 	rows = frappe.get_all("Employee",
 		filters={"relieving_date": [">=", add_days(today, -30)]},
@@ -1059,6 +1100,7 @@ def get_separation():
 
 @frappe.whitelist()
 def get_org_builder():
+	_require_hr()
 	top = frappe.get_all("Employee", filters={"reports_to": ["in", ["", None]], "status": "Active"},
 		fields=["name", "employee_name", "designation"], limit=1)
 	heads = []
@@ -1072,28 +1114,52 @@ def get_org_builder():
 
 @frappe.whitelist()
 def get_hr_attendance():
+	_require_hr()
 	today = getdate()
-	statuses = {}
-	rows = []
 	emps = frappe.get_all("Employee", filters={"status": ["in", ["Active", "On Leave"]]},
 		fields=["name", "employee_name", "department", "image"], limit=999)
+	names = [e["name"] for e in emps] or [""]
+
+	# Bulk-load today's signals once (no per-employee queries).
+	on_leave = {l.employee: l.leave_type for l in frappe.get_all("Leave Application",
+		filters={"employee": ["in", names], "status": "Approved", "docstatus": 1,
+				 "from_date": ["<=", today], "to_date": [">=", today]},
+		fields=["employee", "leave_type"])}
+	checkin = {}
+	for c in frappe.get_all("Employee Checkin",
+		filters={"employee": ["in", names], "time": ["between", [f"{today} 00:00:00", f"{today} 23:59:59"]]},
+		fields=["employee", "time", "log_type"], order_by="time asc"):
+		checkin.setdefault(c.employee, c.time)
+	att_today = {a.employee: a.status for a in frappe.get_all("Attendance",
+		filters={"employee": ["in", names], "attendance_date": today, "docstatus": 1},
+		fields=["employee", "status"])}
+
+	statuses, rows = {}, []
 	for e in emps:
-		st = _today_status(e["name"])
-		statuses[st["att"]] = statuses.get(st["att"], 0) + 1
-		if len(rows) < 40:
-			rows.append({**e, "att": st["att"], "inT": st["in"], "department": (e.department or "").split(" - ")[0]})
+		n = e["name"]
+		if n in on_leave:
+			att, intime = "On Leave", "—"
+		elif n in checkin:
+			att, intime = "Present", get_datetime(checkin[n]).strftime("%H:%M")
+		elif att_today.get(n) == "Work From Home":
+			att, intime = "WFH", "—"
+		elif att_today.get(n) == "Present":
+			att, intime = "Present", "—"
+		else:
+			att, intime = "Not in", "—"
+		statuses[att] = statuses.get(att, 0) + 1
+		if len(rows) < 50:
+			rows.append({**e, "att": att, "inT": intime, "department": (e.department or "").split(" - ")[0]})
 	return {
-		"summary": {
-			"present": statuses.get("Present", 0), "wfh": statuses.get("WFH", 0),
-			"leave": statuses.get("On Leave", 0), "absent": statuses.get("Not in", 0),
-			"total": len(emps),
-		},
+		"summary": {"present": statuses.get("Present", 0), "wfh": statuses.get("WFH", 0),
+					"leave": statuses.get("On Leave", 0), "absent": statuses.get("Not in", 0), "total": len(emps)},
 		"rows": rows,
 	}
 
 
 @frappe.whitelist()
 def get_roster():
+	_require_hr()
 	shifts = []
 	for s in frappe.get_all("Shift Type", fields=["name", "start_time", "end_time"], limit=10):
 		cnt = frappe.db.count("Shift Assignment", {"shift_type": s.name})
@@ -1107,6 +1173,7 @@ def get_roster():
 
 @frappe.whitelist()
 def get_biometric():
+	_require_hr()
 	# No device DocType — derive a per-location punch view from today's check-ins.
 	today = getdate()
 	locs = frappe.get_all("Branch", fields=["name"], limit=10)
@@ -1125,6 +1192,7 @@ def get_biometric():
 
 @frappe.whitelist()
 def get_regularizations():
+	_require_hr()
 	rows = []
 	if frappe.db.exists("DocType", "Attendance Request"):
 		for a in frappe.get_all("Attendance Request",
@@ -1153,6 +1221,7 @@ def _component_total(component, parentfield="deductions"):
 
 @frappe.whitelist()
 def get_payroll_run():
+	_require_hr()
 	slips = frappe.get_all("Salary Slip", filters={"docstatus": 1},
 		fields=["name", "employee", "employee_name", "department", "gross_pay", "net_pay", "total_deduction"],
 		order_by="net_pay desc", limit=25)
@@ -1170,6 +1239,7 @@ def get_payroll_run():
 
 @frappe.whitelist()
 def get_salary_structure():
+	_require_hr()
 	ss = frappe.get_all("Salary Structure", filters={"docstatus": 1}, fields=["name"], limit=1)
 	comps = []
 	if ss:
@@ -1185,6 +1255,7 @@ def get_salary_structure():
 
 @frappe.whitelist()
 def get_revisions():
+	_require_hr()
 	rows = []
 	for a in frappe.get_all("Salary Structure Assignment", filters={"docstatus": 1},
 		fields=["employee", "employee_name", "base", "from_date"], order_by="from_date desc", limit=30):
@@ -1194,6 +1265,7 @@ def get_revisions():
 
 @frappe.whitelist()
 def get_offcycle():
+	_require_hr()
 	rows = []
 	if frappe.db.exists("DocType", "Additional Salary"):
 		for a in frappe.get_all("Additional Salary",
@@ -1207,6 +1279,7 @@ def get_offcycle():
 
 @frappe.whitelist()
 def get_reconcile():
+	_require_hr()
 	agg = frappe.db.sql("select count(*), coalesce(sum(case when net_pay<0 then 1 else 0 end),0) from `tabSalary Slip` where docstatus=1")[0]
 	active = frappe.db.count("Employee", {"status": "Active"})
 	missing_ifsc = frappe.db.count("Employee", {"status": "Active", "ifsc_code": ["in", ["", None]]})
@@ -1223,6 +1296,7 @@ def get_reconcile():
 
 @frappe.whitelist()
 def get_bankfile():
+	_require_hr()
 	rows = frappe.db.sql("""
 		select coalesce(e.bank_name, 'Unmapped') bank, count(*) emp, coalesce(sum(ss.net_pay),0) amt
 		from `tabSalary Slip` ss join `tabEmployee` e on e.name = ss.employee
@@ -1248,6 +1322,7 @@ COMPLIANCE_META = {
 
 @frappe.whitelist()
 def get_compliance(kind):
+	_require_hr()
 	c = COMPLIANCE_META.get(kind)
 	if not c:
 		return {}
@@ -1271,6 +1346,7 @@ def get_compliance(kind):
 
 @frappe.whitelist()
 def get_challan():
+	_require_hr()
 	rows = []
 	for k, c in COMPLIANCE_META.items():
 		amt = _component_total(c["component"])
@@ -1282,6 +1358,7 @@ def get_challan():
 
 @frappe.whitelist()
 def get_statcal():
+	_require_hr()
 	events = [
 		{"date": "07", "mon": "Jun", "title": "TDS deposit + 24Q Q1 return", "tag": "TDS", "tone": "danger"},
 		{"date": "15", "mon": "Jun", "title": "PF ECR + ESI contribution", "tag": "PF / ESI", "tone": "warning"},
@@ -1295,6 +1372,7 @@ def get_statcal():
 # ----------------------------------------------------------- recruitment
 @frappe.whitelist()
 def get_jobs():
+	_require_hr()
 	jobs = frappe.get_all("Job Opening",
 		fields=["name", "job_title", "designation", "department", "status", "company"],
 		order_by="creation desc", limit=50)
@@ -1311,6 +1389,7 @@ def get_jobs():
 
 @frappe.whitelist()
 def get_pipeline():
+	_require_hr()
 	STAGES = [("Open", "Applied"), ("Replied", "Screening"), ("Hold", "Interview"), ("Accepted", "Offer"), ("Rejected", "Closed")]
 	cols = []
 	for status, label in STAGES:
@@ -1322,6 +1401,7 @@ def get_pipeline():
 
 @frappe.whitelist()
 def get_interviews():
+	_require_hr()
 	rows = frappe.get_all("Interview",
 		fields=["name", "job_applicant", "interview_type", "scheduled_on", "from_time", "status"],
 		order_by="scheduled_on desc", limit=50)
@@ -1336,6 +1416,7 @@ def get_interviews():
 
 @frappe.whitelist()
 def get_offers():
+	_require_hr()
 	offers = frappe.get_all("Job Offer",
 		fields=["name", "applicant_name", "designation", "status", "offer_date"],
 		order_by="offer_date desc", limit=50)
@@ -1351,6 +1432,7 @@ def get_offers():
 # ----------------------------------------------------------- performance (HR)
 @frappe.whitelist()
 def get_appraisal_cycle():
+	_require_hr()
 	cyc = frappe.get_all("Appraisal Cycle", fields=["name", "start_date", "end_date", "status"], order_by="creation desc", limit=1)
 	total = frappe.db.count("Employee", {"status": "Active"})
 	submitted = frappe.db.count("Appraisal", {})
@@ -1369,6 +1451,7 @@ def get_appraisal_cycle():
 
 @frappe.whitelist()
 def get_calibration():
+	_require_hr()
 	# 9-box from appraisals where available; counts only.
 	appraisals = frappe.get_all("Appraisal", fields=["total_score"], limit=999)
 	boxes = [[0] * 3 for _ in range(3)]
@@ -1387,6 +1470,7 @@ def get_calibration():
 
 @frappe.whitelist()
 def get_survey():
+	_require_hr()
 	# Surveys sourced from public Notes tagged as surveys is overkill — present
 	# real engagement signals if any survey doctype exists, else empty.
 	return {"surveys": []}
@@ -1395,6 +1479,7 @@ def get_survey():
 # ----------------------------------------------------------- analytics
 @frappe.whitelist()
 def get_analytics():
+	_require_hr()
 	emps = frappe.get_all("Employee", filters={"status": "Active"},
 		fields=["department", "date_of_joining", "gender"], limit=999)
 	depts = {}
@@ -1421,10 +1506,111 @@ def get_analytics():
 
 @frappe.whitelist()
 def get_settings():
+	_require_hr()
 	company = COMPANY_NAME()
 	c = frappe.db.get_value("Company", company, ["company_name", "abbr", "default_currency", "country"], as_dict=True) or {}
 	leave_types = frappe.get_all("Leave Type", fields=["name", "max_leaves_allowed", "is_carry_forward", "is_lwp"], limit=20)
 	return {"company": c, "leave_types": leave_types}
+
+
+# ================================================================ WRITES (ESS)
+@frappe.whitelist(methods=["POST"])
+def apply_leave(leave_type, from_date, to_date, reason=None, half_day=0):
+	emp = _current_employee()
+	if not emp:
+		frappe.throw("No employee record linked to this user.")
+	doc = frappe.get_doc({
+		"doctype": "Leave Application",
+		"employee": emp["name"],
+		"leave_type": leave_type,
+		"from_date": from_date,
+		"to_date": to_date,
+		"half_day": 1 if frappe.utils.cint(half_day) else 0,
+		"description": reason,
+		"status": "Open",
+		"company": emp.get("company"),
+	})
+	doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+	return {"name": doc.name}
+
+
+@frappe.whitelist(methods=["POST"])
+def raise_ticket(subject, description=None, priority="Medium"):
+	doc = frappe.get_doc({
+		"doctype": "Issue",
+		"subject": subject,
+		"description": description,
+		"priority": priority if frappe.db.exists("Issue Priority", priority) else None,
+		"raised_by": frappe.session.user,
+		"status": "Open",
+	})
+	doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+	return {"name": doc.name}
+
+
+@frappe.whitelist(methods=["POST"])
+def submit_expense_claim(expense_type, amount, expense_date, description=None):
+	emp = _current_employee()
+	if not emp:
+		frappe.throw("No employee record linked to this user.")
+	company = emp.get("company")
+	doc = frappe.get_doc({
+		"doctype": "Expense Claim",
+		"employee": emp["name"],
+		"company": company,
+		"posting_date": getdate(),
+		"approval_status": "Draft",
+		"currency": frappe.db.get_value("Company", company, "default_currency") or "INR",
+		"exchange_rate": 1,
+		"expenses": [{
+			"expense_date": expense_date or str(getdate()),
+			"expense_type": expense_type,
+			"amount": frappe.utils.flt(amount),
+			"sanctioned_amount": frappe.utils.flt(amount),
+			"description": description,
+		}],
+	})
+	doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+	return {"name": doc.name}
+
+
+@frappe.whitelist(methods=["POST"])
+def submit_regularization(from_date, reason, explanation=None):
+	emp = _current_employee()
+	if not emp:
+		frappe.throw("No employee record linked to this user.")
+	if not frappe.db.exists("DocType", "Attendance Request"):
+		frappe.throw("Attendance Request is not available on this site.")
+	doc = frappe.get_doc({
+		"doctype": "Attendance Request",
+		"employee": emp["name"],
+		"company": emp.get("company"),
+		"from_date": from_date,
+		"to_date": from_date,
+		"reason": reason,
+		"explanation": explanation,
+	})
+	doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+	return {"name": doc.name}
+
+
+@frappe.whitelist()
+def get_leave_types():
+	"""Leave types the current employee can apply for (with balance)."""
+	emp = _current_employee()
+	bal = {b["type"]: b for b in _leave_balance(emp)} if emp else {}
+	return {"types": [{"value": lt.name, "label": lt.name, "balance": bal.get(lt.name, {}).get("balance")}
+					  for lt in frappe.get_all("Leave Type", fields=["name"], order_by="name")]}
+
+
+@frappe.whitelist()
+def get_expense_types():
+	return {"types": [{"value": t.name, "label": t.name}
+					  for t in frappe.get_all("Expense Claim Type", fields=["name"], order_by="name")]}
 
 
 @frappe.whitelist(methods=["POST"])

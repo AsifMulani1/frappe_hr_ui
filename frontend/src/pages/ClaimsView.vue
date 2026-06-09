@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from "vue"
-import { Button, createResource } from "frappe-ui"
+import { ref, reactive, computed } from "vue"
+import { Button, FormControl, createResource, toast } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import StatTiles from "@/components/ui/StatTiles.vue"
 import Card from "@/components/ui/Card.vue"
@@ -20,6 +20,24 @@ const props = defineProps({
 const r = createResource({ url: "frappe_hr_ui.api.get_expense_claims_screen", auto: true })
 const d = computed(() => r.data || {})
 const open = ref(false)
+
+const expenseTypes = createResource({ url: "frappe_hr_ui.api.get_expense_types", auto: true })
+const typeOptions = computed(() => (expenseTypes.data?.types || []))
+const form = reactive({ expense_type: "", amount: "", expense_date: "", description: "" })
+const submit = createResource({
+  url: "frappe_hr_ui.api.submit_expense_claim",
+  onSuccess() {
+    toast.success("Claim submitted")
+    open.value = false
+    Object.assign(form, { expense_type: "", amount: "", expense_date: "", description: "" })
+    r.reload()
+  },
+  onError(e) { toast.error(e?.messages?.[0] || "Couldn't submit claim") },
+})
+function submitClaim() {
+  if (!form.expense_type || !form.amount) { toast.error("Pick a category and amount"); return }
+  submit.submit({ ...form })
+}
 const STATUS_TONE = { Approved: "success", Draft: "warning", Paid: "accent", Rejected: "danger" }
 const tiles = computed(() => {
   const s = d.value.summary || {}
@@ -66,9 +84,16 @@ const columns = [
         </DataTable>
       </div>
     </Card>
-    <Drawer :open="open" :title="addLabel" subtitle="Attach a receipt and submit for approval" :width="480" @close="open = false">
-      <div class="text-[13px] text-ink-gray-6">Pick a category, amount and receipt. Submitting routes to your approver.</div>
-      <template #footer><Button variant="ghost" label="Save draft" @click="open = false" /><Button variant="solid" theme="gray" label="Submit claim" @click="open = false" /></template>
+    <Drawer :open="open" :title="addLabel" subtitle="Submit for approval" :width="480" @close="open = false">
+      <div class="flex flex-col gap-4">
+        <FormControl type="select" label="Category" :options="typeOptions" v-model="form.expense_type" />
+        <div class="grid grid-cols-2 gap-3">
+          <FormControl type="number" label="Amount (₹)" placeholder="0" v-model="form.amount" />
+          <FormControl type="date" label="Date of expense" v-model="form.expense_date" />
+        </div>
+        <FormControl type="textarea" label="Description" placeholder="What was this for?" v-model="form.description" />
+      </div>
+      <template #footer><Button variant="ghost" label="Cancel" @click="open = false" /><Button variant="solid" theme="gray" label="Submit claim" :loading="submit.loading" @click="submitClaim" /></template>
     </Drawer>
   </div>
 </template>

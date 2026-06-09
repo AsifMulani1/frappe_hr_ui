@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, watch } from "vue"
-import { Button, createResource } from "frappe-ui"
+import { ref, reactive, computed, watch } from "vue"
+import { Button, FormControl, createResource, toast } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
@@ -19,6 +19,22 @@ watch(tickets, (t) => { if (t.length && !active.value) select(t[0].name) })
 function select(name) { active.value = name; thread.fetch({ name }) }
 const cur = computed(() => thread.data || {})
 const STATUS_TONE = { Open: "info", Replied: "warning", Resolved: "success", Closed: "neutral" }
+
+const form = reactive({ subject: "", description: "", priority: "Medium" })
+const raise = createResource({
+  url: "frappe_hr_ui.api.raise_ticket",
+  onSuccess() {
+    toast.success("Ticket raised")
+    open.value = false
+    Object.assign(form, { subject: "", description: "", priority: "Medium" })
+    list.reload()
+  },
+  onError(e) { toast.error(e?.messages?.[0] || "Couldn't raise ticket") },
+})
+function submitTicket() {
+  if (!form.subject) { toast.error("Add a subject"); return }
+  raise.submit({ ...form })
+}
 </script>
 
 <template>
@@ -76,8 +92,12 @@ const STATUS_TONE = { Open: "info", Replied: "warning", Resolved: "success", Clo
     </div>
 
     <Drawer :open="open" title="Raise a ticket" subtitle="We'll route it to the right team" @close="open = false">
-      <div class="text-[13px] text-ink-gray-6">Choose a category, subject and description. It'll be assigned to the right team.</div>
-      <template #footer><Button variant="ghost" label="Cancel" @click="open = false" /><Button variant="solid" theme="gray" label="Submit ticket" @click="open = false" /></template>
+      <div class="flex flex-col gap-4">
+        <FormControl type="text" label="Subject" placeholder="Brief summary of your request" v-model="form.subject" />
+        <FormControl type="select" label="Priority" :options="['Low', 'Medium', 'High']" v-model="form.priority" />
+        <FormControl type="textarea" label="Description" placeholder="Describe your request in detail…" v-model="form.description" />
+      </div>
+      <template #footer><Button variant="ghost" label="Cancel" @click="open = false" /><Button variant="solid" theme="gray" label="Submit ticket" :loading="raise.loading" @click="submitTicket" /></template>
     </Drawer>
   </div>
 </template>

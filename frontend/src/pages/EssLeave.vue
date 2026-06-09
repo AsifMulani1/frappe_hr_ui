@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from "vue"
-import { Button, createResource } from "frappe-ui"
+import { ref, reactive, computed } from "vue"
+import { Button, FormControl, createResource, toast } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
@@ -17,6 +17,31 @@ const r = createResource({ url: "frappe_hr_ui.api.get_employee_leave", auto: tru
 const d = computed(() => r.data || {})
 const tab = ref("upcoming")
 const open = ref(false)
+
+const leaveTypes = createResource({ url: "frappe_hr_ui.api.get_leave_types", auto: true })
+const typeOptions = computed(() =>
+  (leaveTypes.data?.types || []).map((t) => ({ label: t.balance != null ? `${t.label} (${t.balance} left)` : t.label, value: t.value }))
+)
+const form = reactive({ leave_type: "", from_date: "", to_date: "", reason: "" })
+const apply = createResource({
+  url: "frappe_hr_ui.api.apply_leave",
+  onSuccess() {
+    toast.success("Leave application submitted")
+    open.value = false
+    Object.assign(form, { leave_type: "", from_date: "", to_date: "", reason: "" })
+    r.reload()
+  },
+  onError(e) {
+    toast.error(e?.messages?.[0] || "Couldn't submit leave")
+  },
+})
+function submitLeave() {
+  if (!form.leave_type || !form.from_date || !form.to_date) {
+    toast.error("Pick a leave type and dates")
+    return
+  }
+  apply.submit({ ...form, to_date: form.to_date || form.from_date })
+}
 
 const TYPE_TONE = { "Casual Leave": "info", "Sick Leave": "success", "Earned Leave": "accent", "Comp Off": "warning" }
 const STATUS_TONE = { Approved: "success", Open: "warning", Rejected: "danger", Cancelled: "neutral" }
@@ -95,10 +120,17 @@ const totalLeft = computed(() => (d.value.balance || []).reduce((s, b) => s + (b
     </div>
 
     <Drawer :open="open" title="Apply for leave" subtitle="Request time off — your manager will be notified" :width="480" @close="open = false">
-      <div class="text-[13px] text-ink-gray-6">Pick a leave type, dates and reason. Submitting routes to your reporting manager.</div>
+      <div class="flex flex-col gap-4">
+        <FormControl type="select" label="Leave type" :options="typeOptions" v-model="form.leave_type" />
+        <div class="grid grid-cols-2 gap-3">
+          <FormControl type="date" label="From" v-model="form.from_date" />
+          <FormControl type="date" label="To" v-model="form.to_date" />
+        </div>
+        <FormControl type="textarea" label="Reason" placeholder="Add a reason (optional)…" v-model="form.reason" />
+      </div>
       <template #footer>
         <Button variant="ghost" label="Cancel" @click="open = false" />
-        <Button variant="solid" theme="gray" label="Submit request" @click="open = false" />
+        <Button variant="solid" theme="gray" label="Submit request" :loading="apply.loading" @click="submitLeave" />
       </template>
     </Drawer>
   </div>

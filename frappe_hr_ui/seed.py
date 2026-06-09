@@ -497,6 +497,7 @@ def ensure_expense_claims(id_to_name):
                 ect.save(ignore_permissions=True)
             except Exception:
                 frappe.db.rollback()
+    frappe.db.commit()  # persist types before risky claim inserts
     rows = [
         ("HR-1042", "Internet", "2026-05-31", 1499, "Home broadband - May"),
         ("HR-1042", "Conveyance", "2026-05-28", 640, "Client visit - Andheri"),
@@ -511,6 +512,7 @@ def ensure_expense_claims(id_to_name):
             ec = frappe.get_doc({
                 "doctype": "Expense Claim", "employee": dn, "company": COMPANY,
                 "posting_date": edate, "approval_status": "Draft",
+                "currency": CURRENCY, "exchange_rate": 1,
                 "expenses": [{"expense_date": edate, "expense_type": etype,
                               "amount": amt, "sanctioned_amount": amt, "description": desc}],
             })

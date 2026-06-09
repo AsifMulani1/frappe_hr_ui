@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from "vue"
-import { Button, createResource } from "frappe-ui"
+import { ref, reactive, computed } from "vue"
+import { Button, FormControl, createResource, toast } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import StatTiles from "@/components/ui/StatTiles.vue"
 import Card from "@/components/ui/Card.vue"
@@ -14,6 +14,22 @@ import Icon from "@/components/ui/Icon.vue"
 const r = createResource({ url: "frappe_hr_ui.api.get_employee_attendance", auto: true })
 const d = computed(() => r.data || {})
 const open = ref(false)
+
+const form = reactive({ from_date: "", reason: "Work From Home", explanation: "" })
+const submit = createResource({
+  url: "frappe_hr_ui.api.submit_regularization",
+  onSuccess() {
+    toast.success("Regularization submitted")
+    open.value = false
+    Object.assign(form, { from_date: "", reason: "Work From Home", explanation: "" })
+    r.reload()
+  },
+  onError(e) { toast.error(e?.messages?.[0] || "Couldn't submit") },
+})
+function submitReg() {
+  if (!form.from_date) { toast.error("Pick a date"); return }
+  submit.submit({ ...form })
+}
 
 const STATUS_TONE = {
   Present: "success", "Work From Home": "accent", "On Leave": "warning",
@@ -95,12 +111,14 @@ const calCells = computed(() => Array.from({ length: 31 }, (_, i) => i + 1))
     </div>
 
     <Drawer :open="open" title="Regularize attendance" subtitle="Request a correction for a missed or incorrect punch" @close="open = false">
-      <div class="flex flex-col gap-3 text-[13px] text-ink-gray-6">
-        Submit a regularization for a day with a missed or wrong punch. This routes to your reporting manager for approval.
+      <div class="flex flex-col gap-4">
+        <FormControl type="date" label="Date" v-model="form.from_date" />
+        <FormControl type="select" label="Reason" :options="['Work From Home', 'On Duty']" v-model="form.reason" />
+        <FormControl type="textarea" label="Explanation" placeholder="Add context for your manager…" v-model="form.explanation" />
       </div>
       <template #footer>
         <Button variant="ghost" label="Cancel" @click="open = false" />
-        <Button variant="solid" theme="gray" label="Submit request" @click="open = false" />
+        <Button variant="solid" theme="gray" label="Submit request" :loading="submit.loading" @click="submitReg" />
       </template>
     </Drawer>
   </div>
