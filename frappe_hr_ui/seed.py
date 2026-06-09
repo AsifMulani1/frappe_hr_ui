@@ -529,25 +529,32 @@ def ensure_recruitment():
         ("Account Executive", "Account Executive", "Sales"),
         ("DevOps Engineer", "DevOps Engineer", "Engineering"),
     ]
+    title_to_name = {}
     for title, desig, dept in openings:
-        if frappe.db.exists("Job Opening", {"job_title": title}):
+        existing = frappe.db.get_value("Job Opening", {"job_title": title}, "name")
+        if existing:
+            title_to_name[title] = existing
             continue
         try:
-            frappe.get_doc({
+            jo = frappe.get_doc({
                 "doctype": "Job Opening", "job_title": title, "designation": desig,
-                "company": COMPANY, "status": "Open",
-                "department": f"{dept} - {ABBR}",
-            }).insert(ignore_permissions=True)
+                "company": COMPANY, "status": "Open", "department": f"{dept} - {ABBR}",
+            })
+            jo.insert(ignore_permissions=True)
+            title_to_name[title] = jo.name
         except Exception as e:
             frappe.db.rollback()
             print(f"    ! job opening {title}: {e}")
+    frappe.db.commit()  # persist openings before risky child inserts
 
+    # applicant -> (name, email, opening title, applicant status)
     applicants = [
         ("Aisha Khan", "aisha.khan@example.com", "Senior Frontend Engineer", "Open"),
-        ("Karan Patel", "karan.patel@example.com", "Senior Frontend Engineer", "Open"),
-        ("Vivek Nair", "vivek.nair@example.com", "Senior Frontend Engineer", "Open"),
-        ("Pooja Reddy", "pooja.reddy@example.com", "Product Designer", "Open"),
-        ("Arnav Bose", "arnav.bose@example.com", "DevOps Engineer", "Open"),
+        ("Karan Patel", "karan.patel@example.com", "Senior Frontend Engineer", "Replied"),
+        ("Vivek Nair", "vivek.nair@example.com", "Senior Frontend Engineer", "Hold"),
+        ("Pooja Reddy", "pooja.reddy@example.com", "Product Designer", "Accepted"),
+        ("Arnav Bose", "arnav.bose@example.com", "DevOps Engineer", "Hold"),
+        ("Imran Ali", "imran.ali@example.com", "Account Executive", "Open"),
     ]
     for name, email, title, status in applicants:
         if frappe.db.exists("Job Applicant", {"email_id": email}):
@@ -555,25 +562,45 @@ def ensure_recruitment():
         try:
             frappe.get_doc({
                 "doctype": "Job Applicant", "applicant_name": name, "email_id": email,
-                "job_title": title, "status": status,
+                "job_title": title_to_name.get(title), "status": status,
             }).insert(ignore_permissions=True)
         except Exception as e:
             frappe.db.rollback()
             print(f"    ! applicant {name}: {e}")
+    frappe.db.commit()
+
+    # interviews
+    if not frappe.db.exists("Interview Type", "Technical Round"):
+        try:
+            frappe.get_doc({"doctype": "Interview Type", "__newname": "Technical Round", "name": "Technical Round"}).insert(ignore_permissions=True)
+        except Exception:
+            frappe.db.rollback()
+    for cand in ["Vivek Nair", "Arnav Bose"]:
+        ja = frappe.db.get_value("Job Applicant", {"applicant_name": cand}, "name")
+        if ja and not frappe.db.exists("Interview", {"job_applicant": ja}):
+            try:
+                frappe.get_doc({
+                    "doctype": "Interview", "job_applicant": ja, "interview_type": "Technical Round",
+                    "scheduled_on": nowdate(), "from_time": "10:00:00", "to_time": "10:45:00",
+                }).insert(ignore_permissions=True)
+            except Exception as e:
+                frappe.db.rollback()
+                print(f"    ! interview {cand}: {e}")
 
     for name, desig in [("Pooja Reddy", "Product Designer"), ("Arnav Bose", "DevOps Engineer")]:
         ja = frappe.db.get_value("Job Applicant", {"applicant_name": name}, "name")
         if ja and not frappe.db.exists("Job Offer", {"job_applicant": ja}):
             try:
                 frappe.get_doc({
-                    "doctype": "Job Offer", "job_applicant": ja, "status": "Awaiting Response",
+                    "doctype": "Job Offer", "job_applicant": ja,
+                    "status": "Accepted" if name == "Pooja Reddy" else "Awaiting Response",
                     "offer_date": "2026-05-29", "designation": desig, "company": COMPANY,
                 }).insert(ignore_permissions=True)
             except Exception as e:
                 frappe.db.rollback()
                 print(f"    ! offer {name}: {e}")
     frappe.db.commit()
-    print("  + Recruitment (openings, applicants, offers) ensured")
+    print("  + Recruitment (openings, applicants, interviews, offers) ensured")
 
 
 # Persona logins: (employee_id, email, password, [roles]). Lets you sign in as

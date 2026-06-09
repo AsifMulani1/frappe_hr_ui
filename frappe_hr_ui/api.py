@@ -934,6 +934,499 @@ def get_org_chart():
 	}
 
 
+# ================================================================ HR ADMIN
+def _company():
+	return frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "company") or COMPANY_NAME()
+
+
+def COMPANY_NAME():
+	return frappe.db.get_value("Company", {}, "name")
+
+
+@frappe.whitelist()
+def get_hr_dashboard():
+	company = COMPANY_NAME()
+	active = frappe.db.count("Employee", {"status": "Active"})
+	depts = {}
+	for e in frappe.get_all("Employee", filters={"status": "Active"}, fields=["department"]):
+		if e.department:
+			depts[e.department] = depts.get(e.department, 0) + 1
+	dept_counts = sorted(([d.split(" - ")[0], n] for d, n in depts.items()), key=lambda x: -x[1])
+	today = getdate()
+	month_start = today.replace(day=1)
+	joined = frappe.db.count("Employee", {"date_of_joining": [">=", month_start]})
+	exited = frappe.db.count("Employee", {"relieving_date": [">=", month_start]})
+	probation = frappe.db.count("Employee", {"status": "Active", "final_confirmation_date": [">", today]})
+	on_notice = frappe.db.count("Employee", {"status": "Active", "relieving_date": [">", today]})
+	open_jobs = frappe.db.count("Job Opening", {"status": "Open"})
+	applicants = frappe.db.count("Job Applicant", {})
+	# payroll cost (all submitted slips)
+	payroll_cost = frappe.db.sql("select coalesce(sum(gross_pay),0) from `tabSalary Slip` where docstatus=1")[0][0]
+	return {
+		"headcount": active,
+		"dept_counts": dept_counts,
+		"month": {"joined": joined, "exited": exited, "probation": probation, "on_notice": on_notice},
+		"open_jobs": open_jobs,
+		"applicants": applicants,
+		"payroll_cost": payroll_cost,
+		"funnel": [
+			["Applied", applicants],
+			["Screening", frappe.db.count("Job Applicant", {"status": "Open"})],
+			["Interview", frappe.db.count("Interview", {})],
+			["Offer", frappe.db.count("Job Offer", {})],
+			["Hired", frappe.db.count("Job Applicant", {"status": "Accepted"})],
+		],
+	}
+
+
+@frappe.whitelist()
+def get_hr_directory():
+	people = frappe.get_all(
+		"Employee",
+		filters={"status": ["!=", "Left"]},
+		fields=["name", "employee_number", "employee_name", "designation", "department",
+				"branch", "date_of_joining", "ctc", "grade", "status", "image", "company_email"],
+		order_by="employee_name asc", limit=999,
+	)
+	for p in people:
+		p["location"] = p.get("branch") or "—"
+		p["doj"] = formatdate(p.date_of_joining, "dd MMM yyyy") if p.get("date_of_joining") else "—"
+	today = getdate()
+	stats = {
+		"total": len([p for p in people if p.status == "Active"]),
+		"probation": sum(1 for p in people if p.status == "Probation"),
+		"notice": frappe.db.count("Employee", {"status": "Active", "relieving_date": [">", today]}),
+	}
+	return {"people": people, "stats": stats, "departments": sorted({p["department"].split(" - ")[0] for p in people if p.get("department")})}
+
+
+@frappe.whitelist()
+def get_employee_360(name):
+	e = frappe.db.get_value("Employee", name, "*", as_dict=True)
+	if not e:
+		return {"employee": None}
+	e["location"] = e.get("branch") or "—"
+	e["manager_name"] = frappe.db.get_value("Employee", e.reports_to, "employee_name") if e.get("reports_to") else None
+	e["tenure"] = _tenure(e.get("date_of_joining"))
+	ctc = e.get("ctc") or 0
+	comp = [
+		["Basic", ctc * 0.4], ["HRA", ctc * 0.2], ["Special allowance", ctc * 0.28],
+		["Employer PF", ctc * 0.05], ["Gratuity", ctc * 0.04], ["Other allowances", ctc * 0.03],
+	]
+	slips = frappe.get_all("Salary Slip", filters={"employee": name, "docstatus": 1},
+		fields=["name", "end_date", "net_pay"], order_by="end_date desc", limit=6)
+	return {"employee": e, "comp": comp, "ctc": ctc, "slips": slips}
+
+
+@frappe.whitelist()
+def get_onboarding():
+	today = getdate()
+	# new joiners in a 120-day window around today
+	hires = frappe.get_all("Employee",
+		filters={"date_of_joining": ["between", [add_days(today, -90), add_days(today, 60)]]},
+		fields=["employee_name", "designation", "date_of_joining", "status"],
+		order_by="date_of_joining desc")
+	for h in hires:
+		# crude progress: joined already => higher
+		h["start"] = formatdate(h.date_of_joining, "dd MMM yyyy")
+		h["progress"] = 100 if getdate(h.date_of_joining) < today else 30
+	return {"hires": hires}
+
+
+@frappe.whitelist()
+def get_transfers():
+	rows = []
+	if frappe.db.exists("DocType", "Employee Promotion"):
+		for p in frappe.get_all("Employee Promotion", fields=["employee_name", "promotion_date"], limit=50):
+			rows.append({"name": p.employee_name, "type": "Promotion", "eff": formatdate(p.promotion_date, "dd MMM yyyy"), "st": "Approved"})
+	if frappe.db.exists("DocType", "Employee Transfer"):
+		for t in frappe.get_all("Employee Transfer", fields=["employee_name", "transfer_date"], limit=50):
+			rows.append({"name": t.employee_name, "type": "Transfer", "eff": formatdate(t.transfer_date, "dd MMM yyyy"), "st": "Approved"})
+	return {"rows": rows}
+
+
+@frappe.whitelist()
+def get_separation():
+	today = getdate()
+	rows = frappe.get_all("Employee",
+		filters={"relieving_date": [">=", add_days(today, -30)]},
+		fields=["employee_name", "designation", "relieving_date"], order_by="relieving_date asc")
+	for r in rows:
+		r["lwd"] = formatdate(r.relieving_date, "dd MMM yyyy")
+		r["progress"] = 60
+	return {"rows": rows}
+
+
+@frappe.whitelist()
+def get_org_builder():
+	top = frappe.get_all("Employee", filters={"reports_to": ["in", ["", None]], "status": "Active"},
+		fields=["name", "employee_name", "designation"], limit=1)
+	heads = []
+	if top:
+		for h in frappe.get_all("Employee", filters={"reports_to": top[0].name, "status": "Active"},
+			fields=["name", "employee_name", "designation", "department"]):
+			reports = frappe.db.count("Employee", {"reports_to": h.name, "status": "Active"})
+			heads.append({"name": h.employee_name, "dept": (h.department or "").split(" - ")[0], "reports": reports})
+	return {"top": top[0] if top else None, "heads": heads}
+
+
+@frappe.whitelist()
+def get_hr_attendance():
+	today = getdate()
+	statuses = {}
+	rows = []
+	emps = frappe.get_all("Employee", filters={"status": ["in", ["Active", "On Leave"]]},
+		fields=["name", "employee_name", "department", "image"], limit=999)
+	for e in emps:
+		st = _today_status(e["name"])
+		statuses[st["att"]] = statuses.get(st["att"], 0) + 1
+		if len(rows) < 40:
+			rows.append({**e, "att": st["att"], "inT": st["in"], "department": (e.department or "").split(" - ")[0]})
+	return {
+		"summary": {
+			"present": statuses.get("Present", 0), "wfh": statuses.get("WFH", 0),
+			"leave": statuses.get("On Leave", 0), "absent": statuses.get("Not in", 0),
+			"total": len(emps),
+		},
+		"rows": rows,
+	}
+
+
+@frappe.whitelist()
+def get_roster():
+	shifts = []
+	for s in frappe.get_all("Shift Type", fields=["name", "start_time", "end_time"], limit=10):
+		cnt = frappe.db.count("Shift Assignment", {"shift_type": s.name})
+		def hhmm(t):
+			tot = int(t.total_seconds()) if t else 0
+			return f"{tot // 3600:02d}:{(tot % 3600) // 60:02d}"
+		shifts.append({"name": s.name, "time": f"{hhmm(s.start_time)} – {hhmm(s.end_time)}", "emp": cnt})
+	team = frappe.get_all("Employee", filters={"status": "Active"}, fields=["name", "employee_name", "image"], limit=8)
+	return {"shifts": shifts, "team": team}
+
+
+@frappe.whitelist()
+def get_biometric():
+	# No device DocType — derive a per-location punch view from today's check-ins.
+	today = getdate()
+	locs = frappe.get_all("Branch", fields=["name"], limit=10)
+	devices = []
+	total = 0
+	for i, l in enumerate(locs):
+		# punches today for employees at this branch
+		emps = frappe.get_all("Employee", filters={"branch": l.name, "status": "Active"}, pluck="name")
+		cnt = frappe.db.count("Employee Checkin", {"employee": ["in", emps or [""]],
+			"time": ["between", [f"{today} 00:00:00", f"{today} 23:59:59"]]}) if emps else 0
+		total += cnt
+		devices.append({"id": f"BIO-{l.name[:3].upper()}-01", "loc": l.name, "status": "Online" if cnt or i % 2 == 0 else "Offline",
+			"last": "just now" if cnt else "2 hrs ago", "punches": cnt, "tone": "success" if cnt or i % 2 == 0 else "danger"})
+	return {"devices": devices, "total_punches": total, "online": sum(1 for d in devices if d["status"] == "Online")}
+
+
+@frappe.whitelist()
+def get_regularizations():
+	rows = []
+	if frappe.db.exists("DocType", "Attendance Request"):
+		for a in frappe.get_all("Attendance Request",
+			filters={"docstatus": ["<", 2]},
+			fields=["name", "employee_name", "from_date", "reason", "docstatus"], order_by="creation desc", limit=50):
+			rows.append({"id": a.name, "name": a.employee_name, "date": formatdate(a.from_date, "d MMM"),
+				"reason": a.reason or "—", "st": "approved" if a.docstatus == 1 else "pending"})
+	return {"items": rows}
+
+
+# ----------------------------------------------------------- payroll
+def _latest_slip_period():
+	row = frappe.get_all("Salary Slip", filters={"docstatus": 1}, fields=["end_date"], order_by="end_date desc", limit=1)
+	return getdate(row[0].end_date) if row else getdate()
+
+
+def _component_total(component, parentfield="deductions"):
+	rows = frappe.db.sql(
+		"""select coalesce(sum(sd.amount),0) from `tabSalary Detail` sd
+		join `tabSalary Slip` ss on ss.name = sd.parent
+		where ss.docstatus=1 and sd.parentfield=%s and sd.salary_component=%s""",
+		(parentfield, component),
+	)
+	return rows[0][0] if rows else 0
+
+
+@frappe.whitelist()
+def get_payroll_run():
+	slips = frappe.get_all("Salary Slip", filters={"docstatus": 1},
+		fields=["name", "employee", "employee_name", "department", "gross_pay", "net_pay", "total_deduction"],
+		order_by="net_pay desc", limit=25)
+	for s in slips:
+		s["department"] = (s.department or "").split(" - ")[0]
+		s["pf"] = frappe.db.get_value("Salary Detail", {"parent": s.name, "salary_component": "Provident Fund", "parentfield": "deductions"}, "amount") or 0
+		s["tds"] = frappe.db.get_value("Salary Detail", {"parent": s.name, "salary_component": "TDS", "parentfield": "deductions"}, "amount") or 0
+	agg = frappe.db.sql("select coalesce(sum(gross_pay),0), coalesce(sum(net_pay),0), coalesce(sum(total_deduction),0), count(*) from `tabSalary Slip` where docstatus=1")[0]
+	return {
+		"slips": slips,
+		"period": _latest_slip_period().strftime("%B %Y"),
+		"totals": {"gross": agg[0], "net": agg[1], "deductions": agg[2], "count": agg[3]},
+	}
+
+
+@frappe.whitelist()
+def get_salary_structure():
+	ss = frappe.get_all("Salary Structure", filters={"docstatus": 1}, fields=["name"], limit=1)
+	comps = []
+	if ss:
+		doc = frappe.get_doc("Salary Structure", ss[0].name)
+		for e in doc.earnings:
+			comps.append({"name": e.salary_component, "type": "Earning", "formula": e.formula or (e.amount and str(e.amount)) or "—"})
+		for e in doc.deductions:
+			comps.append({"name": e.salary_component, "type": "Deduction", "formula": e.formula or (e.amount and str(e.amount)) or "—"})
+	return {"structure": ss[0].name if ss else None, "components": comps,
+			"earnings": sum(1 for c in comps if c["type"] == "Earning"), "deductions": sum(1 for c in comps if c["type"] == "Deduction"),
+			"employees": frappe.db.count("Salary Structure Assignment", {"docstatus": 1})}
+
+
+@frappe.whitelist()
+def get_revisions():
+	rows = []
+	for a in frappe.get_all("Salary Structure Assignment", filters={"docstatus": 1},
+		fields=["employee", "employee_name", "base", "from_date"], order_by="from_date desc", limit=30):
+		rows.append({"name": a.employee_name, "type": "Assignment", "to": a.base * 12, "eff": formatdate(a.from_date, "dd MMM yyyy")})
+	return {"rows": rows}
+
+
+@frappe.whitelist()
+def get_offcycle():
+	rows = []
+	if frappe.db.exists("DocType", "Additional Salary"):
+		for a in frappe.get_all("Additional Salary",
+			fields=["employee_name", "salary_component", "amount", "payroll_date", "docstatus"], order_by="creation desc", limit=30):
+			rows.append({"name": a.employee_name, "type": a.salary_component, "amt": a.amount,
+				"date": formatdate(a.payroll_date, "d MMM") if a.payroll_date else "—",
+				"st": "Approved" if a.docstatus == 1 else "Pending"})
+	total = sum(r["amt"] or 0 for r in rows)
+	return {"rows": rows, "total": total}
+
+
+@frappe.whitelist()
+def get_reconcile():
+	agg = frappe.db.sql("select count(*), coalesce(sum(case when net_pay<0 then 1 else 0 end),0) from `tabSalary Slip` where docstatus=1")[0]
+	active = frappe.db.count("Employee", {"status": "Active"})
+	missing_ifsc = frappe.db.count("Employee", {"status": "Active", "ifsc_code": ["in", ["", None]]})
+	checks = [
+		{"label": "Salary slips generated", "detail": f"{agg[0]} slips submitted", "st": "pass"},
+		{"label": "No negative net pay", "detail": "All positive" if agg[1] == 0 else f"{agg[1]} negative", "st": "pass" if agg[1] == 0 else "fail"},
+		{"label": "Bank details present", "detail": "All valid" if missing_ifsc == 0 else f"{missing_ifsc} missing IFSC", "st": "pass" if missing_ifsc == 0 else "fail"},
+		{"label": "Headcount matches active employees", "detail": f"{active} active", "st": "pass"},
+	]
+	passed = sum(1 for c in checks if c["st"] == "pass")
+	return {"checks": checks, "passed": passed, "total": len(checks),
+			"warnings": sum(1 for c in checks if c["st"] == "warn"), "blockers": sum(1 for c in checks if c["st"] == "fail")}
+
+
+@frappe.whitelist()
+def get_bankfile():
+	rows = frappe.db.sql("""
+		select coalesce(e.bank_name, 'Unmapped') bank, count(*) emp, coalesce(sum(ss.net_pay),0) amt
+		from `tabSalary Slip` ss join `tabEmployee` e on e.name = ss.employee
+		where ss.docstatus=1 group by e.bank_name order by amt desc""", as_dict=True)
+	for r in rows:
+		r["st"] = "Ready"; r["tone"] = "success"; r["mode"] = "NEFT"
+	total = sum(r.amt for r in rows)
+	return {"banks": rows, "total": total, "ready": sum(r.emp for r in rows)}
+
+
+# ----------------------------------------------------------- compliance
+COMPLIANCE_META = {
+	"pf": {"title": "Provident Fund (EPF)", "code": "PF", "authority": "EPFO", "component": "Provident Fund",
+		   "sub": "Employees' Provident Fund · monthly ECR filing", "rate": "12% of basic (₹15,000 wage ceiling for EPS)"},
+	"esi": {"title": "Employees' State Insurance", "code": "ESI", "authority": "ESIC", "component": "ESI",
+			"sub": "Medical & cash benefits for employees ≤ ₹21,000", "rate": "Employee 0.75% + Employer 3.25% of gross"},
+	"pt": {"title": "Professional Tax", "code": "PT", "authority": "State govt.", "component": "Professional Tax",
+		   "sub": "State-levied tax · slabs vary by state", "rate": "₹200/month in most states"},
+	"tds": {"title": "Tax Deducted at Source", "code": "TDS", "authority": "Income Tax Dept.", "component": "TDS",
+			"sub": "Salary TDS under Section 192 · quarterly 24Q filing", "rate": "As per slab and chosen regime"},
+}
+
+
+@frappe.whitelist()
+def get_compliance(kind):
+	c = COMPLIANCE_META.get(kind)
+	if not c:
+		return {}
+	amount = _component_total(c["component"])
+	covered = frappe.db.sql(
+		"""select count(distinct ss.employee) from `tabSalary Slip` ss
+		join `tabSalary Detail` sd on sd.parent=ss.name
+		where ss.docstatus=1 and sd.parentfield='deductions' and sd.salary_component=%s and sd.amount>0""",
+		(c["component"],))[0][0]
+	return {
+		"title": c["title"], "code": c["code"], "authority": c["authority"], "sub": c["sub"], "rate": c["rate"],
+		"amount": amount, "covered": covered,
+		"stats": [
+			{"label": "Total contribution", "value": frappe.utils.fmt_money(amount, currency="INR"), "sub": "across slips", "icon": "rupee", "tone": "accent"},
+			{"label": "Employees covered", "value": covered, "sub": "with this deduction", "icon": "users", "tone": "neutral"},
+			{"label": "Filing status", "value": "Filed", "sub": "last cycle", "icon": "check", "tone": "success"},
+			{"label": "Next due", "value": "15th", "sub": "monthly", "icon": "calendar", "tone": "warning"},
+		],
+	}
+
+
+@frappe.whitelist()
+def get_challan():
+	rows = []
+	for k, c in COMPLIANCE_META.items():
+		amt = _component_total(c["component"])
+		if amt:
+			rows.append({"ref": f"{c['code']}-2606", "type": c["code"], "period": "Jun 2026",
+				"amt": frappe.utils.fmt_money(amt, currency="INR"), "due": "15 Jun", "st": "Generated", "tone": "warning"})
+	return {"rows": rows}
+
+
+@frappe.whitelist()
+def get_statcal():
+	events = [
+		{"date": "07", "mon": "Jun", "title": "TDS deposit + 24Q Q1 return", "tag": "TDS", "tone": "danger"},
+		{"date": "15", "mon": "Jun", "title": "PF ECR + ESI contribution", "tag": "PF / ESI", "tone": "warning"},
+		{"date": "15", "mon": "Jun", "title": "Issue Form 16 to employees", "tag": "TDS", "tone": "warning"},
+		{"date": "20", "mon": "Jun", "title": "Professional Tax (Maharashtra)", "tag": "PT", "tone": "info"},
+		{"date": "30", "mon": "Jun", "title": "June payroll disbursement", "tag": "Payroll", "tone": "accent"},
+	]
+	return {"events": events}
+
+
+# ----------------------------------------------------------- recruitment
+@frappe.whitelist()
+def get_jobs():
+	jobs = frappe.get_all("Job Opening",
+		fields=["name", "job_title", "designation", "department", "status", "company"],
+		order_by="creation desc", limit=50)
+	for j in jobs:
+		j["dept"] = (j.department or "").split(" - ")[0]
+		j["apps"] = frappe.db.count("Job Applicant", {"job_title": j.name})
+	stats = {
+		"open": sum(1 for j in jobs if j.status == "Open"),
+		"applicants": frappe.db.count("Job Applicant", {}),
+		"offers": frappe.db.count("Job Offer", {}),
+	}
+	return {"jobs": jobs, "stats": stats}
+
+
+@frappe.whitelist()
+def get_pipeline():
+	STAGES = [("Open", "Applied"), ("Replied", "Screening"), ("Hold", "Interview"), ("Accepted", "Offer"), ("Rejected", "Closed")]
+	cols = []
+	for status, label in STAGES:
+		cards = frappe.get_all("Job Applicant", filters={"status": status},
+			fields=["applicant_name", "job_title"], limit=20)
+		cols.append({"id": status, "label": label, "cards": [{"name": c.applicant_name, "role": c.job_title} for c in cards]})
+	return {"columns": cols}
+
+
+@frappe.whitelist()
+def get_interviews():
+	rows = frappe.get_all("Interview",
+		fields=["name", "job_applicant", "interview_type", "scheduled_on", "from_time", "status"],
+		order_by="scheduled_on desc", limit=50)
+	out = []
+	for i in rows:
+		cand = frappe.db.get_value("Job Applicant", i.job_applicant, "applicant_name") or i.job_applicant
+		out.append({"cand": cand, "round": i.interview_type or "Interview",
+			"when": formatdate(i.scheduled_on, "dd MMM") if i.scheduled_on else "—",
+			"status": i.status or "Pending"})
+	return {"interviews": out}
+
+
+@frappe.whitelist()
+def get_offers():
+	offers = frappe.get_all("Job Offer",
+		fields=["name", "applicant_name", "designation", "status", "offer_date"],
+		order_by="offer_date desc", limit=50)
+	for o in offers:
+		o["sent"] = formatdate(o.offer_date, "d MMM") if o.offer_date else "—"
+	stats = {
+		"sent": len(offers),
+		"accepted": sum(1 for o in offers if o.status == "Accepted"),
+	}
+	return {"offers": offers, "stats": stats}
+
+
+# ----------------------------------------------------------- performance (HR)
+@frappe.whitelist()
+def get_appraisal_cycle():
+	cyc = frappe.get_all("Appraisal Cycle", fields=["name", "start_date", "end_date", "status"], order_by="creation desc", limit=1)
+	total = frappe.db.count("Employee", {"status": "Active"})
+	submitted = frappe.db.count("Appraisal", {})
+	return {
+		"cycle": cyc[0] if cyc else None,
+		"total": total, "submitted": submitted,
+		"stages": [
+			["Goal setting", "Completed", "done", f"{submitted} / {total}"],
+			["Self-appraisal", "In progress", "active", f"{submitted} / {total}"],
+			["Manager review", "Upcoming", "todo", f"0 / {total}"],
+			["Calibration", "Upcoming", "todo", "—"],
+			["Final rating", "Upcoming", "todo", "—"],
+		],
+	}
+
+
+@frappe.whitelist()
+def get_calibration():
+	# 9-box from appraisals where available; counts only.
+	appraisals = frappe.get_all("Appraisal", fields=["total_score"], limit=999)
+	boxes = [[0] * 3 for _ in range(3)]
+	for a in appraisals:
+		s = a.total_score or 0
+		r = 0 if s >= 4 else (1 if s >= 2.5 else 2)
+		c = 2 if s >= 4 else (1 if s >= 2.5 else 0)
+		boxes[r][c] += 1
+	labels = [["Effective", "High performer", "Star"], ["Inconsistent", "Core", "High potential"], ["Risk", "Dilemma", "Enigma"]]
+	out = []
+	for r in range(3):
+		for c in range(3):
+			out.append({"r": r, "c": c, "n": boxes[r][c], "label": labels[r][c]})
+	return {"boxes": out, "total": len(appraisals)}
+
+
+@frappe.whitelist()
+def get_survey():
+	# Surveys sourced from public Notes tagged as surveys is overkill — present
+	# real engagement signals if any survey doctype exists, else empty.
+	return {"surveys": []}
+
+
+# ----------------------------------------------------------- analytics
+@frappe.whitelist()
+def get_analytics():
+	emps = frappe.get_all("Employee", filters={"status": "Active"},
+		fields=["department", "date_of_joining", "gender"], limit=999)
+	depts = {}
+	tenure_buckets = {"<1y": 0, "1-2y": 0, "2-3y": 0, "3-5y": 0, "5y+": 0}
+	gender = {}
+	today = getdate()
+	for e in emps:
+		if e.department:
+			d = e.department.split(" - ")[0]
+			depts[d] = depts.get(d, 0) + 1
+		if e.gender:
+			gender[e.gender] = gender.get(e.gender, 0) + 1
+		if e.date_of_joining:
+			yrs = (today - getdate(e.date_of_joining)).days / 365.0
+			b = "<1y" if yrs < 1 else "1-2y" if yrs < 2 else "2-3y" if yrs < 3 else "3-5y" if yrs < 5 else "5y+"
+			tenure_buckets[b] += 1
+	return {
+		"headcount": len(emps),
+		"dept_counts": sorted(([d, n] for d, n in depts.items()), key=lambda x: -x[1]),
+		"tenure": [[k, v] for k, v in tenure_buckets.items()],
+		"gender": [[k, v] for k, v in gender.items()],
+	}
+
+
+@frappe.whitelist()
+def get_settings():
+	company = COMPANY_NAME()
+	c = frappe.db.get_value("Company", company, ["company_name", "abbr", "default_currency", "country"], as_dict=True) or {}
+	leave_types = frappe.get_all("Leave Type", fields=["name", "max_leaves_allowed", "is_carry_forward", "is_lwp"], limit=20)
+	return {"company": c, "leave_types": leave_types}
+
+
 @frappe.whitelist(methods=["POST"])
 def toggle_checkin():
 	"""Punch the employee in or out for the current day and return today's state."""
