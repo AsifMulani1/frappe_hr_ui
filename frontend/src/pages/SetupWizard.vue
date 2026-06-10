@@ -12,7 +12,7 @@ import Icon from "@/components/ui/Icon.vue"
 
 const router = useRouter()
 const route = useRoute()
-const STEPS = ["Overview", "Defaults", "People", "Pay", "Run", "Done"]
+const STEPS = ["Company", "Defaults", "People", "Pay", "Run", "Done"]
 const STEP_QUERY = { defaults: 2, people: 3, employees: 3, pay: 4, run: 5 }
 const step = ref(STEP_QUERY[route.query.step] || 1)
 
@@ -23,6 +23,18 @@ const stateOpts = STATES.map((x) => ({ label: x, value: x }))
 
 const status = createResource({ url: "frappe_hr_ui.india_defaults.defaults_status", auto: true })
 const s = computed(() => status.data || {})
+
+// ---- 1. Company (create if the site has none) ----
+const companyForm = reactive({ company_name: "", country: "India", currency: "INR" })
+const createCompany = createResource({
+  url: "frappe_hr_ui.india_defaults.create_company",
+  onSuccess() { toast.success("Company created"); status.reload(); stat.reload(); step.value = 2 },
+  onError(e) { toast.error(e?.messages?.[0] || "Couldn't create company") },
+})
+function makeCompany() {
+  if (!companyForm.company_name.trim()) { toast.error("Enter a company name"); return }
+  createCompany.submit({ ...companyForm })
+}
 
 // ---- 2. Defaults + statutory numbers ----
 const applyDefaults = createResource({ url: "frappe_hr_ui.india_defaults.apply_defaults" })
@@ -150,16 +162,33 @@ watch(step, (n) => {
       </template>
     </div>
 
-    <!-- 1: overview -->
+    <!-- 1: company -->
     <Card v-if="step === 1">
-      <div class="text-[15px] font-medium text-ink-gray-9">Welcome 👋</div>
-      <p class="mt-1 text-[13px] text-ink-gray-6">Five steps to a live payroll for <b>{{ s.company || "your company" }}</b> — apply India defaults, set your statutory numbers, import your team, assign pay, and run the first cycle.</p>
-      <div class="mt-4 grid grid-cols-3 gap-3">
-        <div class="rounded-md border border-outline-gray-1 p-3"><div class="tnum text-[20px] font-medium">{{ s.components ?? "—" }}</div><div class="text-[11.5px] text-ink-gray-5">salary components</div></div>
-        <div class="rounded-md border border-outline-gray-1 p-3"><div class="tnum text-[20px] font-medium">{{ s.leave_types ?? "—" }}</div><div class="text-[11.5px] text-ink-gray-5">leave types</div></div>
-        <div class="rounded-md border border-outline-gray-1 p-3"><div class="tnum text-[20px] font-medium">{{ s.employees ?? "—" }}</div><div class="text-[11.5px] text-ink-gray-5">employees</div></div>
-      </div>
-      <div class="mt-5 flex justify-end"><Button variant="solid" theme="blue" label="Get started" @click="step = 2" /></div>
+      <!-- no company on the site yet → create one (no Desk needed) -->
+      <template v-if="status.data && !s.has_company">
+        <div class="text-[15px] font-medium text-ink-gray-9">Create your company</div>
+        <p class="mt-1 text-[13px] text-ink-gray-6">Everything — employees, payroll, compliance — belongs to a company. Let's create yours to get started.</p>
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <FormControl class="col-span-2" type="text" label="Company name" placeholder="e.g. Acme Technologies Pvt. Ltd." v-model="companyForm.company_name" />
+          <FormControl type="text" label="Country" v-model="companyForm.country" />
+          <FormControl type="text" label="Currency" v-model="companyForm.currency" />
+        </div>
+        <p class="mt-3 text-[11.5px] text-ink-gray-4">This builds your chart of accounts — it can take a few seconds.</p>
+        <div class="mt-5 flex justify-end">
+          <Button variant="solid" theme="blue" label="Create company & continue" :loading="createCompany.loading" @click="makeCompany" />
+        </div>
+      </template>
+      <!-- company exists → welcome -->
+      <template v-else>
+        <div class="text-[15px] font-medium text-ink-gray-9">Welcome 👋</div>
+        <p class="mt-1 text-[13px] text-ink-gray-6">Five steps to a live payroll for <b>{{ s.company || "your company" }}</b> — apply India defaults, set your statutory numbers, import your team, assign pay, and run the first cycle.</p>
+        <div class="mt-4 grid grid-cols-3 gap-3">
+          <div class="rounded-md border border-outline-gray-1 p-3"><div class="tnum text-[20px] font-medium">{{ s.components ?? "—" }}</div><div class="text-[11.5px] text-ink-gray-5">salary components</div></div>
+          <div class="rounded-md border border-outline-gray-1 p-3"><div class="tnum text-[20px] font-medium">{{ s.leave_types ?? "—" }}</div><div class="text-[11.5px] text-ink-gray-5">leave types</div></div>
+          <div class="rounded-md border border-outline-gray-1 p-3"><div class="tnum text-[20px] font-medium">{{ s.employees ?? "—" }}</div><div class="text-[11.5px] text-ink-gray-5">employees</div></div>
+        </div>
+        <div class="mt-5 flex justify-end"><Button variant="solid" theme="blue" label="Get started" @click="step = 2" /></div>
+      </template>
     </Card>
 
     <!-- 2: defaults + statutory -->

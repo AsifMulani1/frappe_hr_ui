@@ -62,6 +62,8 @@ def import_employees(rows, company=None):
 		frappe.throw(frappe._("You are not permitted to import employees."), frappe.PermissionError)
 	rows = frappe.parse_json(rows) or []
 	company = _company(company)
+	if not company:
+		frappe.throw(frappe._("No company found. Create your company first (Setup wizard → Company)."))
 	created, errors = [], []
 	reqd = [c["key"] for c in COLUMNS if c["reqd"]]
 	for i, row in enumerate(rows):

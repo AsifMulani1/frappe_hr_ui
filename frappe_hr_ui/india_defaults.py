@@ -54,6 +54,37 @@ def _require_admin():
 		frappe.throw(frappe._("You are not permitted to apply defaults."), frappe.PermissionError)
 
 
+@frappe.whitelist(methods=["POST"])
+def create_company(company_name, country="India", currency="INR", abbr=None):
+	"""Create the company if it doesn't exist and make it the default — so a fresh
+	site never needs Desk. Employee/payroll all require a company."""
+	if not frappe.has_permission("Company", "create"):
+		frappe.throw(frappe._("You are not permitted to create a company."), frappe.PermissionError)
+	company_name = (company_name or "").strip()
+	if not company_name:
+		frappe.throw(frappe._("Company name is required."))
+	if frappe.db.exists("Company", company_name):
+		company = company_name
+	else:
+		doc = frappe.get_doc({
+			"doctype": "Company",
+			"company_name": company_name,
+			"country": country or "India",
+			"default_currency": currency or "INR",
+		})
+		if abbr:
+			doc.abbr = abbr
+		doc.insert(ignore_permissions=True)  # ERPNext builds the chart of accounts here
+		company = doc.name
+	# make it the default everywhere
+	gd = frappe.get_single("Global Defaults")
+	gd.default_company = company
+	gd.save(ignore_permissions=True)
+	frappe.db.set_default("company", company)
+	frappe.db.commit()
+	return {"company": company}
+
+
 def ensure_components(company, log):
 	for name, ctype, _formula in SALARY_COMPONENTS:
 		if not frappe.db.exists("Salary Component", name):
@@ -176,6 +207,7 @@ def defaults_status(company=None):
 	company = _company(company)
 	return {
 		"company": company,
+		"has_company": bool(company),
 		"has_components": bool(frappe.db.exists("Salary Component", {"name": ["in", [c[0] for c in SALARY_COMPONENTS]]})),
 		"components": frappe.db.count("Salary Component"),
 		"leave_types": frappe.db.count("Leave Type"),
