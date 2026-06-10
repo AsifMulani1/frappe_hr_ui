@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, computed, watch } from "vue"
-import { Button, FormControl, createResource, toast } from "frappe-ui"
+import { Button, FormControl, TextInput, createResource, toast } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
@@ -8,6 +8,7 @@ import Drawer from "@/components/ui/Drawer.vue"
 import EmptyState from "@/components/ui/EmptyState.vue"
 import Icon from "@/components/ui/Icon.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const list = createResource({ url: "frappe_hr_ui.api.get_my_tickets", auto: true })
 const thread = createResource({ url: "frappe_hr_ui.api.get_ticket_thread" })
@@ -35,14 +36,31 @@ function submitTicket() {
   if (!form.subject) { toast.error("Add a subject"); return }
   raise.submit({ ...form })
 }
+
+const replyText = ref("")
+const reply = createResource({
+  url: "frappe_hr_ui.api.reply_ticket",
+  onSuccess() {
+    replyText.value = ""
+    if (active.value) thread.fetch({ name: active.value })
+    list.reload()
+  },
+  onError(e) { toast.error(e?.messages?.[0] || "Couldn't send reply") },
+})
+function sendReply() {
+  if (!active.value) return
+  if (!replyText.value.trim()) { toast.error("Write a message first"); return }
+  reply.submit({ name: active.value, message: replyText.value })
+}
 </script>
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Helpdesk" subtitle="Raise and track requests to HR, Payroll and IT">
-      <template #actions><Button variant="solid" theme="gray" label="Raise a ticket" @click="open = true"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+      <template #actions><Button variant="solid" theme="blue" label="Raise a ticket" @click="open = true"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
 
+    <AsyncShell :resource="list" loading-text="Loading tickets…">
     <EmptyState v-if="!tickets.length && !list.loading" icon="help" title="No tickets yet" message="Raise a ticket and track HR/IT responses here." />
 
     <div v-else class="grid items-start gap-5" style="grid-template-columns: 360px minmax(0,1fr)">
@@ -85,11 +103,12 @@ function submitTicket() {
           <EmptyState v-if="!(cur.thread || []).length" icon="inbox" title="No replies yet" compact />
         </div>
         <div class="flex items-center gap-2.5 border-t border-outline-gray-1 p-3.5">
-          <input placeholder="Write a reply…" class="h-[38px] flex-1 rounded-md border border-outline-gray-2 px-3 text-[13.5px] outline-none" />
-          <Button variant="solid" theme="gray" label="Send"><template #suffix><Icon name="arrowRight" :size="15" /></template></Button>
+          <TextInput v-model="replyText" :disabled="!cur.id" placeholder="Write a reply…" class="flex-1" @keyup.enter="sendReply" />
+          <Button variant="solid" theme="blue" label="Send" :loading="reply.loading" :disabled="!cur.id" @click="sendReply"><template #suffix><Icon name="arrowRight" :size="15" /></template></Button>
         </div>
       </Card>
     </div>
+    </AsyncShell>
 
     <Drawer :open="open" title="Raise a ticket" subtitle="We'll route it to the right team" @close="open = false">
       <div class="flex flex-col gap-4">
@@ -97,7 +116,7 @@ function submitTicket() {
         <FormControl type="select" label="Priority" :options="['Low', 'Medium', 'High']" v-model="form.priority" />
         <FormControl type="textarea" label="Description" placeholder="Describe your request in detail…" v-model="form.description" />
       </div>
-      <template #footer><Button variant="ghost" label="Cancel" @click="open = false" /><Button variant="solid" theme="gray" label="Submit ticket" :loading="raise.loading" @click="submitTicket" /></template>
+      <template #footer><Button variant="ghost" label="Cancel" @click="open = false" /><Button variant="solid" theme="blue" label="Submit ticket" :loading="raise.loading" @click="submitTicket" /></template>
     </Drawer>
   </div>
 </template>

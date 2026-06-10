@@ -1,7 +1,7 @@
 <script setup>
-import { ref, computed, watch } from "vue"
+import { ref, reactive, computed, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
-import { Button, createResource } from "frappe-ui"
+import { Button, FormControl, createResource, toast } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
@@ -10,9 +10,12 @@ import Field from "@/components/ui/Field.vue"
 import SectionLabel from "@/components/ui/SectionLabel.vue"
 import AmountRow from "@/components/ui/AmountRow.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
+import Drawer from "@/components/ui/Drawer.vue"
+import FormDrawer from "@/components/ui/FormDrawer.vue"
 import Icon from "@/components/ui/Icon.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
 import { formatINR } from "@/utils/formatters"
+import { useCreate, useLinkOptions } from "@/composables/useDocActions"
 
 const route = useRoute(); const router = useRouter()
 const r = createResource({ url: "frappe_hr_ui.api.get_employee_360" })
@@ -21,6 +24,40 @@ function load() { if (route.query.id) r.fetch({ name: route.query.id }) }
 watch(() => route.query.id, load, { immediate: true })
 const e = computed(() => r.data?.employee || {})
 const grid = "grid grid-cols-3 gap-x-6 gap-y-[18px]"
+
+// Edit employee (in-app, HR)
+const designations = useLinkOptions("Designation")
+const departments = useLinkOptions("Department")
+const employmentTypes = useLinkOptions("Employment Type")
+const editOpen = ref(false)
+const edit = reactive({ designation: "", department: "", employment_type: "", company_email: "", cell_number: "" })
+const save = createResource({
+  url: "frappe_hr_ui.api.update_employee",
+  onSuccess() { toast.success("Employee updated"); editOpen.value = false; load() },
+  onError(err) { toast.error(err?.messages?.[0] || "Couldn't update") },
+})
+function openEdit() {
+  Object.assign(edit, {
+    designation: e.value.designation || "", department: e.value.department || "",
+    employment_type: e.value.employment_type || "", company_email: e.value.company_email || "",
+    cell_number: e.value.cell_number || "",
+  })
+  editOpen.value = true
+}
+function saveEdit() {
+  save.submit({ name: e.value.name, values: JSON.stringify(edit) })
+}
+
+// Initiate exit (in-app)
+const exit = useCreate("Employee Separation", { onDone: () => load(), successLabel: "Exit initiated" })
+const exitForm = reactive({ employee: "", boarding_begins_on: "" })
+const exitFields = computed(() => [
+  { key: "boarding_begins_on", label: "Exit process begins on", type: "date", cols: 2 },
+])
+function openExit() {
+  Object.assign(exitForm, { employee: e.value.name, boarding_begins_on: "" })
+  exit.openDrawer()
+}
 </script>
 
 <template>
@@ -38,8 +75,8 @@ const grid = "grid grid-cols-3 gap-x-6 gap-y-[18px]"
             <div class="tnum mt-1 text-[12.5px] text-ink-gray-5">{{ e.employee_number }} · Reports to {{ e.manager_name || '—' }}</div>
           </div>
           <div class="flex gap-2">
-            <Button variant="outline" theme="gray" label="Edit"><template #prefix><Icon name="edit" :size="15" /></template></Button>
-            <Button variant="subtle" theme="red" label="Initiate exit"><template #prefix><Icon name="logout" :size="15" /></template></Button>
+            <Button variant="outline" theme="gray" label="Edit" @click="openEdit"><template #prefix><Icon name="edit" :size="15" /></template></Button>
+            <Button variant="subtle" theme="red" label="Initiate exit" @click="openExit"><template #prefix><Icon name="logout" :size="15" /></template></Button>
           </div>
         </div>
         <div class="px-5"><Tabs :tabs="[{ id: 'overview', label: 'Overview' }, { id: 'comp', label: 'Compensation' }, { id: 'stats', label: 'Quick stats' }]" v-model:active="tab" /></div>
@@ -78,5 +115,23 @@ const grid = "grid grid-cols-3 gap-x-6 gap-y-[18px]"
         </Card>
       </div>
     </template>
+
+    <Drawer :open="editOpen" title="Edit employee" :subtitle="e.employee_name" :width="500" @close="editOpen = false">
+      <div class="grid grid-cols-2 gap-x-3 gap-y-4">
+        <div class="col-span-1"><FormControl type="select" label="Designation" :options="designations" v-model="edit.designation" /></div>
+        <div class="col-span-1"><FormControl type="select" label="Department" :options="departments" v-model="edit.department" /></div>
+        <div class="col-span-1"><FormControl type="select" label="Employment type" :options="employmentTypes" v-model="edit.employment_type" /></div>
+        <div class="col-span-1"><FormControl type="text" label="Mobile" v-model="edit.cell_number" /></div>
+        <div class="col-span-2"><FormControl type="email" label="Work email" v-model="edit.company_email" /></div>
+      </div>
+      <template #footer>
+        <Button variant="ghost" label="Cancel" @click="editOpen = false" />
+        <Button variant="solid" theme="blue" label="Save changes" :loading="save.loading" @click="saveEdit" />
+      </template>
+    </Drawer>
+
+    <FormDrawer :open="exit.open" title="Initiate exit" :subtitle="e.employee_name"
+      :fields="exitFields" v-model="exitForm" :loading="exit.create.loading" submit-label="Initiate exit"
+      @close="exit.open = false" @submit="exit.submit(exitForm, ['employee', 'boarding_begins_on'])" />
   </div>
 </template>

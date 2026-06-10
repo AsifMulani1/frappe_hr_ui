@@ -1,0 +1,15 @@
+{
+  "name": "Frappe HR",
+  "short_name": "Frappe HR",
+  "description": "Modern HR & Payroll self-service for Frappe HR",
+  "start_url": "/people",
+  "scope": "/people",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#06B58B",
+  "icons": [
+    { "src": "/assets/hrms/images/frappe-hr-logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "/assets/hrms/images/frappe-hr-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

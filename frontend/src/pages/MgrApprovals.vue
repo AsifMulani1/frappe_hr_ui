@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from "vue"
-import { Button, createResource } from "frappe-ui"
+import { Button, createResource, confirmDialog, toast } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
@@ -8,19 +8,40 @@ import AmountRow from "@/components/ui/AmountRow.vue"
 import EmptyState from "@/components/ui/EmptyState.vue"
 import Icon from "@/components/ui/Icon.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_team_approvals", auto: true })
-const action = createResource({ url: "frappe_hr_ui.api.act_on_approval", onSuccess: () => r.reload() })
+const action = createResource({
+  url: "frappe_hr_ui.api.act_on_approval",
+  onSuccess: () => r.reload(),
+  onError: (e) => toast.error(e?.messages?.[0] || "Couldn't update the request"),
+})
+function runAction(item, a) {
+  action.submit({ kind: item.kind, name: item.id, action: a }, {
+    onSuccess: () => toast.success(a === "reject" ? "Request rejected" : "Request approved"),
+  })
+}
 const sel = ref(null)
 const items = computed(() => r.data?.items || [])
 watch(items, (i) => { if (i.length && !sel.value) sel.value = i[0].id })
 const cur = computed(() => items.value.find((x) => x.id === sel.value) || items.value[0])
-function act(item, a) { action.submit({ kind: item.kind, name: item.id, action: a }) }
+function act(item, a) {
+  if (a === "reject") {
+    confirmDialog({
+      title: "Reject request",
+      message: `Reject this ${String(item.kind).toLowerCase()} from ${item.person}? This can't be undone.`,
+      onConfirm: ({ hideDialog }) => { runAction(item, "reject"); hideDialog() },
+    })
+    return
+  }
+  runAction(item, a)
+}
 </script>
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Approvals" :subtitle="`${items.length} item(s) waiting on you`" />
+    <AsyncShell :resource="r" loading-text="Loading approvals…">
     <EmptyState v-if="!items.length && !r.loading" icon="check" title="All caught up" message="No pending approvals to review." />
     <div v-else class="grid items-start gap-5" style="grid-template-columns: minmax(0,1fr) 380px">
       <Card :pad="false">
@@ -34,7 +55,7 @@ function act(item, a) { action.submit({ kind: item.kind, name: item.id, action: 
             </div>
             <div class="flex gap-1.5" @click.stop>
               <Button variant="outline" theme="gray" size="sm" icon="x" @click="act(a, 'reject')" />
-              <Button variant="solid" theme="gray" size="sm" icon="check" @click="act(a, 'approve')" />
+              <Button variant="solid" theme="blue" size="sm" icon="check" @click="act(a, 'approve')" />
             </div>
           </div>
         </div>
@@ -53,9 +74,10 @@ function act(item, a) { action.submit({ kind: item.kind, name: item.id, action: 
         </div>
         <div class="flex gap-2">
           <Button variant="subtle" theme="red" class="flex-1" label="Reject" @click="act(cur, 'reject')"><template #prefix><Icon name="x" :size="15" /></template></Button>
-          <Button variant="solid" theme="gray" class="flex-1" label="Approve" @click="act(cur, 'approve')"><template #prefix><Icon name="check" :size="15" /></template></Button>
+          <Button variant="solid" theme="blue" class="flex-1" label="Approve" @click="act(cur, 'approve')"><template #prefix><Icon name="check" :size="15" /></template></Button>
         </div>
       </Card>
     </div>
+    </AsyncShell>
   </div>
 </template>

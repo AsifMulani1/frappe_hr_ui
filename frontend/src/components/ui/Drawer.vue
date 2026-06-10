@@ -1,12 +1,25 @@
 <script setup>
+import { watch, onUnmounted } from "vue"
 import Icon from "./Icon.vue"
-defineProps({
+const props = defineProps({
   open: Boolean,
   title: String,
   subtitle: String,
   width: { type: Number, default: 460 },
 })
 const emit = defineEmits(["close"])
+
+function onKey(e) {
+  if (e.key === "Escape") emit("close")
+}
+watch(
+  () => props.open,
+  (open) => {
+    if (open) document.addEventListener("keydown", onKey)
+    else document.removeEventListener("keydown", onKey)
+  }
+)
+onUnmounted(() => document.removeEventListener("keydown", onKey))
 </script>
 
 <template>
@@ -24,7 +37,7 @@ const emit = defineEmits(["close"])
               <div v-if="subtitle" class="mt-0.5 text-[12.5px] text-ink-gray-5">{{ subtitle }}</div>
             </div>
           </slot>
-          <button class="flex h-8 w-8 items-center justify-center rounded-md text-ink-gray-6 hover:bg-surface-gray-2" @click="emit('close')">
+          <button type="button" aria-label="Close" class="flex h-8 w-8 items-center justify-center rounded-md text-ink-gray-6 hover:bg-surface-gray-2" @click="emit('close')">
             <Icon name="x" :size="18" />
           </button>
         </div>

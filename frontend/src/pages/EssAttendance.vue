@@ -9,7 +9,10 @@ import SectionLabel from "@/components/ui/SectionLabel.vue"
 import DataTable from "@/components/ui/DataTable.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import Drawer from "@/components/ui/Drawer.vue"
+import DateField from "@/components/ui/DateField.vue"
 import Icon from "@/components/ui/Icon.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
+import { downloadCSV } from "@/utils/actions"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_employee_attendance", auto: true })
 const d = computed(() => r.data || {})
@@ -28,6 +31,7 @@ const submit = createResource({
 })
 function submitReg() {
   if (!form.from_date) { toast.error("Pick a date"); return }
+  if (form.from_date > new Date().toISOString().slice(0, 10)) { toast.error("You can't regularize a future date"); return }
   submit.submit({ ...form })
 }
 
@@ -61,18 +65,21 @@ const CAL_TONE = {
   Absent: "border-red-100 bg-red-50 text-red-700",
 }
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-const calCells = computed(() => Array.from({ length: 31 }, (_, i) => i + 1))
+const monthStart = computed(() => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), 1) })
+const leadingBlanks = computed(() => (monthStart.value.getDay() + 6) % 7) // Mon-first
+const daysInMonth = computed(() => new Date(monthStart.value.getFullYear(), monthStart.value.getMonth() + 1, 0).getDate())
 </script>
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Attendance" subtitle="Your check-in history, hours, and regularization requests">
       <template #actions>
-        <Button variant="outline" theme="gray" label="Export"><template #prefix><Icon name="download" :size="15" /></template></Button>
-        <Button variant="solid" theme="gray" label="Regularize" @click="open = true"><template #prefix><Icon name="clock" :size="15" /></template></Button>
+        <Button variant="outline" theme="gray" label="Export" @click="downloadCSV('my-attendance', columns, d.logs || [])"><template #prefix><Icon name="download" :size="15" /></template></Button>
+        <Button variant="solid" theme="blue" label="Regularize" @click="open = true"><template #prefix><Icon name="clock" :size="15" /></template></Button>
       </template>
     </PageHeader>
 
+    <AsyncShell :resource="r" :has-employee="!!d.employee" loading-text="Loading attendance…">
     <StatTiles :items="tiles" :cols="4" />
 
     <div class="grid items-start gap-5" style="grid-template-columns: minmax(0,1fr) 380px">
@@ -98,7 +105,8 @@ const calCells = computed(() => Array.from({ length: 31 }, (_, i) => i + 1))
         <CardHeader :title="d.month" sub="Attendance calendar" />
         <div class="grid grid-cols-7 gap-1.5">
           <div v-for="dd in days" :key="dd" class="pb-1 text-center text-[11.5px] font-medium text-ink-gray-5">{{ dd }}</div>
-          <div v-for="day in calCells" :key="day"
+          <div v-for="b in leadingBlanks" :key="'b' + b" />
+          <div v-for="day in daysInMonth" :key="day"
             class="min-h-[52px] rounded-md border p-1.5"
             :class="[CAL_TONE[d.calendar?.[day]] || 'border-outline-gray-1 bg-surface-white text-ink-gray-5', day === d.today ? 'outline outline-1 outline-blue-500' : '']">
             <div class="tnum text-[12px] font-medium text-ink-gray-9">{{ day }}</div>
@@ -109,16 +117,17 @@ const calCells = computed(() => Array.from({ length: 31 }, (_, i) => i + 1))
         </div>
       </Card>
     </div>
+    </AsyncShell>
 
     <Drawer :open="open" title="Regularize attendance" subtitle="Request a correction for a missed or incorrect punch" @close="open = false">
       <div class="flex flex-col gap-4">
-        <FormControl type="date" label="Date" v-model="form.from_date" />
+        <DateField label="Date" v-model="form.from_date" />
         <FormControl type="select" label="Reason" :options="['Work From Home', 'On Duty']" v-model="form.reason" />
         <FormControl type="textarea" label="Explanation" placeholder="Add context for your manager…" v-model="form.explanation" />
       </div>
       <template #footer>
         <Button variant="ghost" label="Cancel" @click="open = false" />
-        <Button variant="solid" theme="gray" label="Submit request" :loading="submit.loading" @click="submitReg" />
+        <Button variant="solid" theme="blue" label="Submit request" :loading="submit.loading" @click="submitReg" />
       </template>
     </Drawer>
   </div>

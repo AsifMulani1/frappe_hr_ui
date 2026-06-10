@@ -13,7 +13,11 @@ export default defineConfig({
     proxy: getProxyOptions(),
     allowedHosts: true,
   },
-  plugins: [vue(), frappeui()],
+  // jinjaBootData injects a `{% for key in boot %}{{ boot[key]|tojson }}` block
+  // into the built HTML; frappe's www `boot` contains a LocalProxy that can't be
+  // JSON-serialized → 500. The SPA fetches session/user via its own resources,
+  // so we don't need boot injected. Disable it.
+  plugins: [vue(), frappeui({ frontendRoute: "/people", jinjaBootData: false })],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),

@@ -8,6 +8,7 @@ import Field from "@/components/ui/Field.vue"
 import DataTable from "@/components/ui/DataTable.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import Icon from "@/components/ui/Icon.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_settings", auto: true })
 const d = computed(() => r.data || {})
@@ -28,6 +29,7 @@ const leaveCols = [
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Settings" subtitle="Configure HR, payroll and compliance" />
+    <AsyncShell :resource="r" loading-text="Loading settings…">
     <div class="grid items-start gap-5" style="grid-template-columns: 240px minmax(0,1fr)">
       <Card class="!p-2">
         <button v-for="g in groups" :key="g.id" @click="active = g.id"
@@ -68,5 +70,6 @@ const leaveCols = [
         </div>
       </Card>
     </div>
+    </AsyncShell>
   </div>
 </template>

@@ -6,6 +6,22 @@ import { userResource } from "@/data/user"
 export const useUiStore = defineStore("ui", () => {
   const activeRole = ref("employee")
   const sidebarCollapsed = ref(false)
+  const searchOpen = ref(false)
+  const mobileNavOpen = ref(false) // off-canvas sidebar on phones
+
+  function toggleMobileNav() {
+    mobileNavOpen.value = !mobileNavOpen.value
+  }
+  function closeMobileNav() {
+    mobileNavOpen.value = false
+  }
+
+  function openSearch() {
+    searchOpen.value = true
+  }
+  function closeSearch() {
+    searchOpen.value = false
+  }
 
   const availableRoles = computed(() => {
     const frappeRoles = userResource.data?.roles || []
@@ -23,5 +39,5 @@ export const useUiStore = defineStore("ui", () => {
     sidebarCollapsed.value = !sidebarCollapsed.value
   }
 
-  return { activeRole, sidebarCollapsed, availableRoles, nav, setRole, toggleSidebar }
+  return { activeRole, sidebarCollapsed, searchOpen, openSearch, closeSearch, availableRoles, nav, setRole, toggleSidebar, mobileNavOpen, toggleMobileNav, closeMobileNav }
 })

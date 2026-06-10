@@ -6,7 +6,7 @@ query against the employee's records.
 """
 
 import frappe
-from frappe.utils import getdate, nowdate, now_datetime, get_datetime, time_diff_in_seconds, add_days, formatdate
+from frappe.utils import getdate, nowdate, now_datetime, get_datetime, time_diff_in_seconds, add_days, formatdate, flt
 
 
 # Per-leave-type accent (token-ish hex; the UI maps these to theme classes).
@@ -68,14 +68,25 @@ def _today_attendance(employee, shift):
 		fields=["time", "log_type"],
 		order_by="time asc",
 	)
-	first_in = next((l.time for l in logs if l.log_type == "IN"), logs[0].time if logs else None)
-	last_out = next((l.time for l in reversed(logs) if l.log_type == "OUT"), None)
-	checked_in = bool(first_in) and not last_out
+	# Current state is whatever the LAST punch was — not "any OUT exists today".
+	# (The old logic broke on multiple in/out sessions: a morning OUT made the
+	# screen read "checked out" even after you punched back IN.)
+	checked_in = bool(logs) and logs[-1].log_type == "IN"
+	first_in = next((l.time for l in logs if l.log_type == "IN"), None)
+	last_out = logs[-1].time if (logs and logs[-1].log_type == "OUT") else None
 
+	# Worked time = sum of each IN→OUT session, plus the open IN→now if on the clock.
 	worked_seconds = 0
-	if first_in:
-		end = get_datetime(last_out) if last_out else now_datetime()
-		worked_seconds = max(0, time_diff_in_seconds(end, get_datetime(first_in)))
+	open_in = None
+	for l in logs:
+		if l.log_type == "IN":
+			if open_in is None:
+				open_in = get_datetime(l.time)
+		elif open_in is not None:  # OUT closes the open session
+			worked_seconds += max(0, time_diff_in_seconds(get_datetime(l.time), open_in))
+			open_in = None
+	if open_in is not None:
+		worked_seconds += max(0, time_diff_in_seconds(now_datetime(), open_in))
 
 	# shift target minutes (default 9h)
 	target_minutes = 540
@@ -130,6 +141,27 @@ def _week(employee):
 	return days
 
 
+def _daily_hours_from_checkins(employee, start, end):
+	"""Average daily worked hours derived from Employee Checkin (first IN -> last OUT)."""
+	logs = frappe.get_all(
+		"Employee Checkin",
+		filters={"employee": employee["name"], "time": ["between", [f"{start} 00:00:00", f"{end} 23:59:59"]]},
+		fields=["time", "log_type"], order_by="time asc",
+	)
+	by_day = {}
+	for l in logs:
+		by_day.setdefault(get_datetime(l.time).date(), []).append(l)
+	hrs = []
+	for day in by_day.values():
+		ins = [get_datetime(x.time) for x in day if x.log_type == "IN"]
+		outs = [get_datetime(x.time) for x in day if x.log_type == "OUT"]
+		if ins and outs:
+			delta = (max(outs) - min(ins)).total_seconds() / 3600
+			if delta > 0:
+				hrs.append(delta)
+	return hrs
+
+
 def _attendance_summary(employee):
 	today = getdate()
 	start = add_days(today, -30)
@@ -142,12 +174,14 @@ def _attendance_summary(employee):
 	wfh = sum(1 for r in rows if r.status == "Work From Home")
 	leave = sum(1 for r in rows if r.status == "On Leave")
 	hours = [r.working_hours for r in rows if r.working_hours]
+	if not hours:
+		hours = _daily_hours_from_checkins(employee, start, today)
 	avg = sum(hours) / len(hours) if hours else 0
 	return {
 		"present": present + wfh,
 		"wfh": wfh,
 		"leave": leave,
-		"avg_hours": f"{int(avg)}h {int((avg % 1) * 60):02d}m" if avg else "—",
+		"avg_hours": f"{int(avg)}h {int((avg % 1) * 60):02d}m" if avg else None,
 	}
 
 
@@ -221,7 +255,10 @@ def _who_is_out(employee):
 
 
 def _holidays(employee):
-	hl = employee.get("holiday_list") or frappe.db.get_value("Company", employee.get("company"), "default_holiday_list")
+	# resolve via hrms/erpnext's authoritative resolver (employee -> grade -> company)
+	from hrms.utils.holiday_list import get_holiday_list_for_employee
+	hl = get_holiday_list_for_employee(employee["name"], raise_exception=False) \
+		or frappe.db.get_value("Company", employee.get("company"), "default_holiday_list")
 	if not hl:
 		return []
 	today = getdate()
@@ -571,6 +608,7 @@ def get_payslip_detail(name):
 		frappe.throw("Not permitted")
 	return {
 		"name": slip.name,
+		"company": slip.company,
 		"month": getdate(slip.end_date).strftime("%B %Y"),
 		"posting_date": formatdate(slip.end_date, "dd MMM yyyy"),
 		"employee_name": slip.employee_name,
@@ -595,7 +633,7 @@ def get_directory():
 		"Employee",
 		filters={"status": ["in", ["Active", "On Leave", "Suspended"]]},
 		fields=["name", "employee_number", "employee_name", "designation", "department",
-				"branch", "reports_to", "company_email", "cell_number", "status", "image", "user_id"],
+				"branch", "reports_to", "company_email", "status", "image"],
 		order_by="employee_name asc",
 		limit=999,
 	)
@@ -716,6 +754,8 @@ def get_my_tickets():
 @frappe.whitelist()
 def get_ticket_thread(name):
 	issue = frappe.get_doc("Issue", name)
+	if issue.raised_by != frappe.session.user and not (set(HR_ROLES) & set(frappe.get_roles())) and frappe.session.user != "Administrator":
+		frappe.throw(frappe._("You are not permitted to view this ticket."), frappe.PermissionError)
 	comms = frappe.get_all(
 		"Communication",
 		filters={"reference_doctype": "Issue", "reference_name": name},
@@ -758,12 +798,23 @@ def get_tax_screen():
 			fields=["exemption_category", "max_amount", "amount"]):
 			decls.append({"sec": d.exemption_category, "limit": d.max_amount, "declared": d.amount})
 			declared_total += d.amount or 0
+	# flexible benefits from the latest salary slip's flexi components (real, not hardcoded)
+	fbp = []
+	if slips:
+		flexi_comps = {c.name for c in frappe.get_all("Salary Component", filters={"is_flexible_benefit": 1}, fields=["name"])}
+		if flexi_comps:
+			latest = sorted(slips, key=lambda s: s.end_date)[-1]
+			for e in frappe.get_all("Salary Detail",
+				filters={"parent": latest.name, "parentfield": "earnings"},
+				fields=["salary_component", "amount"]):
+				if e.salary_component in flexi_comps:
+					fbp.append([e.salary_component, e.amount])
 	return {
 		"employee": emp,
 		"tds_paid": tds,
 		"declarations": decls,
 		"declared_total": declared_total,
-		"fbp": [["Meal card", 2200], ["Fuel & travel", 3000], ["Telephone & internet", 1500], ["Books & periodicals", 1000]],
+		"fbp": fbp,
 	}
 
 
@@ -975,7 +1026,14 @@ def _company():
 
 
 def COMPANY_NAME():
-	return frappe.db.get_value("Company", {}, "name")
+	# Prefer the configured default company; fall back to the one that actually
+	# has employees (handles multi-company / demo setups), then any company.
+	default = frappe.defaults.get_global_default("company")
+	if default:
+		return default
+	by_emp = frappe.db.sql("""select company, count(*) c from `tabEmployee`
+		where status='Active' and company is not null group by company order by c desc limit 1""")
+	return by_emp[0][0] if by_emp else frappe.db.get_value("Company", {}, "name")
 
 
 @frappe.whitelist()
@@ -1012,6 +1070,71 @@ def get_hr_dashboard():
 			["Offer", frappe.db.count("Job Offer", {})],
 			["Hired", frappe.db.count("Job Applicant", {"status": "Accepted"})],
 		],
+	}
+
+
+@frappe.whitelist()
+def get_payroll_dashboard():
+	_require_hr()
+	agg = frappe.db.sql("select coalesce(sum(gross_pay),0), coalesce(sum(net_pay),0), coalesce(sum(total_deduction),0), count(*) from `tabSalary Slip` where docstatus=1")[0]
+	drafts = frappe.db.count("Salary Slip", {"docstatus": 0})
+	on_payroll = frappe.db.count("Salary Structure Assignment", {"docstatus": 1})
+	# statutory deductions — reuse COMPLIANCE_META so names stay aligned with the
+	# india_payroll engine (PF / ESI / PT / LWF / TDS).
+	statutory = [[COMPLIANCE_META[k]["code"], _component_total(COMPLIANCE_META[k]["component"])]
+				 for k in ("pf", "esi", "pt", "lwf", "tds")]
+	# net pay by department (top 6)
+	dept = frappe.db.sql(
+		"""select coalesce(department,'—'), coalesce(sum(net_pay),0)
+		   from `tabSalary Slip` where docstatus = 1 group by department order by 2 desc limit 6""")
+	dept_cost = [[(d or "—").split(" - ")[0], n] for d, n in dept]
+	period = _latest_slip_period()
+	return {
+		"period": period.strftime("%B %Y") if period else "—",
+		"totals": {"gross": agg[0], "net": agg[1], "deductions": agg[2], "count": agg[3]},
+		"drafts": drafts,
+		"on_payroll": on_payroll,
+		"statutory": statutory,
+		"india_payroll": _india_payroll_installed(),
+		"dept_cost": dept_cost,
+	}
+
+
+@frappe.whitelist()
+def get_recruitment_dashboard():
+	_require_hr()
+	applicants = frappe.db.count("Job Applicant", {})
+	interviews = frappe.db.count("Interview", {})
+	offers = frappe.db.count("Job Offer", {})
+	hired = frappe.db.count("Job Applicant", {"status": "Accepted"})
+	jobs = frappe.get_all("Job Opening", filters={"status": "Open"},
+		fields=["name", "job_title", "designation", "department"], order_by="creation desc", limit=6)
+	for j in jobs:
+		j["dept"] = (j.department or "").split(" - ")[0]
+		j["apps"] = frappe.db.count("Job Applicant", {"job_title": j.name})
+	today = getdate()
+	ivs = frappe.get_all("Interview", filters={"scheduled_on": [">=", today]},
+		fields=["name", "job_applicant", "interview_type", "scheduled_on"], order_by="scheduled_on asc", limit=6)
+	upcoming = []
+	for i in ivs:
+		cand = frappe.db.get_value("Job Applicant", i.job_applicant, "applicant_name") or i.job_applicant
+		upcoming.append({"cand": cand, "round": i.interview_type or "Interview",
+			"when": formatdate(i.scheduled_on, "dd MMM") if i.scheduled_on else "—"})
+	return {
+		"stats": {
+			"open_jobs": frappe.db.count("Job Opening", {"status": "Open"}),
+			"total_jobs": frappe.db.count("Job Opening", {}),
+			"applicants": applicants, "interviews": interviews, "offers": offers, "hired": hired,
+		},
+		"funnel": [
+			["Applied", applicants],
+			["Screening", frappe.db.count("Job Applicant", {"status": "Open"})],
+			["Interview", interviews],
+			["Offer", offers],
+			["Hired", hired],
+		],
+		"open_positions": jobs,
+		"upcoming": upcoming,
 	}
 
 
@@ -1210,11 +1333,14 @@ def _latest_slip_period():
 
 
 def _component_total(component, parentfield="deductions"):
+	# `component` may be a single name or a list of aliases (e.g. TDS is booked
+	# as "Income Tax" or "TDS" depending on the salary-component setup).
+	comps = list(component) if isinstance(component, (list, tuple)) else [component]
 	rows = frappe.db.sql(
 		"""select coalesce(sum(sd.amount),0) from `tabSalary Detail` sd
 		join `tabSalary Slip` ss on ss.name = sd.parent
-		where ss.docstatus=1 and sd.parentfield=%s and sd.salary_component=%s""",
-		(parentfield, component),
+		where ss.docstatus=1 and sd.parentfield=%s and sd.salary_component in %s""",
+		(parentfield, tuple(comps)),
 	)
 	return rows[0][0] if rows else 0
 
@@ -1225,16 +1351,147 @@ def get_payroll_run():
 	slips = frappe.get_all("Salary Slip", filters={"docstatus": 1},
 		fields=["name", "employee", "employee_name", "department", "gross_pay", "net_pay", "total_deduction"],
 		order_by="net_pay desc", limit=25)
+	# batch PF/TDS for all slips in one query (avoid N+1)
+	deductions = frappe.get_all("Salary Detail",
+		filters={"parent": ["in", [s.name for s in slips]], "parentfield": "deductions",
+				 "salary_component": ["in", ["Provident Fund", "TDS"]]},
+		fields=["parent", "salary_component", "amount"]) if slips else []
+	ded_map = {}
+	for d in deductions:
+		ded_map.setdefault(d.parent, {})[d.salary_component] = d.amount
 	for s in slips:
 		s["department"] = (s.department or "").split(" - ")[0]
-		s["pf"] = frappe.db.get_value("Salary Detail", {"parent": s.name, "salary_component": "Provident Fund", "parentfield": "deductions"}, "amount") or 0
-		s["tds"] = frappe.db.get_value("Salary Detail", {"parent": s.name, "salary_component": "TDS", "parentfield": "deductions"}, "amount") or 0
+		s["pf"] = ded_map.get(s.name, {}).get("Provident Fund") or 0
+		s["tds"] = ded_map.get(s.name, {}).get("TDS") or 0
 	agg = frappe.db.sql("select coalesce(sum(gross_pay),0), coalesce(sum(net_pay),0), coalesce(sum(total_deduction),0), count(*) from `tabSalary Slip` where docstatus=1")[0]
 	return {
 		"slips": slips,
 		"period": _latest_slip_period().strftime("%B %Y"),
 		"totals": {"gross": agg[0], "net": agg[1], "deductions": agg[2], "count": agg[3]},
 	}
+
+
+def _payroll_eligible(start, company=None):
+	"""Latest active salary-structure assignment per Active employee, effective by `start`.
+	Company is only filtered when explicitly given — otherwise every company's employees
+	are processed using their own assignment's company (DIY-safe, multi-company tolerant)."""
+	filters = {"docstatus": 1, "from_date": ["<=", start]}
+	if company:
+		filters["company"] = company
+	assigns = frappe.get_all("Salary Structure Assignment",
+		filters=filters,
+		fields=["employee", "employee_name", "salary_structure", "company", "from_date", "employment_state"],
+		order_by="from_date desc")
+	latest = {}
+	for a in assigns:
+		if a.employee in latest:
+			continue
+		if frappe.db.get_value("Employee", a.employee, "status") != "Active":
+			continue
+		latest[a.employee] = a
+	return latest
+
+
+@frappe.whitelist()
+def preview_payroll(start_date, company=None):
+	"""Who would be processed for a period — drives the 'Run payroll' confirm step."""
+	_require_hr()
+	start = getdate(start_date)
+	elig = _payroll_eligible(start, company)
+	rows = []
+	for emp, a in elig.items():
+		exists = frappe.db.exists("Salary Slip", {"employee": emp, "start_date": start, "docstatus": ["<", 2]})
+		rows.append({"employee_name": a.employee_name, "salary_structure": a.salary_structure,
+			"state": a.get("employment_state") or "—", "already_run": bool(exists)})
+	return {"period": start.strftime("%B %Y"), "eligible": len(rows),
+		"pending": sum(1 for r in rows if not r["already_run"]), "rows": rows}
+
+
+@frappe.whitelist(methods=["POST"])
+def run_payroll(start_date, end_date, company=None):
+	"""Generate + submit salary slips for every eligible employee for the period.
+	india_payroll's before_save hooks inject PT/ESI/LWF automatically. Each slip is
+	committed individually so one failure never undoes the rest of the batch."""
+	_require_hr()
+	start, end = getdate(start_date), getdate(end_date)
+	elig = _payroll_eligible(start, company)
+	created, skipped, errors = [], [], []
+	for emp, a in elig.items():
+		if frappe.db.exists("Salary Slip", {"employee": emp, "start_date": start, "docstatus": ["<", 2]}):
+			skipped.append(a.employee_name)
+			continue
+		try:
+			frappe.flags.mute_messages = True
+			s = frappe.new_doc("Salary Slip")
+			s.employee = emp
+			s.company = a.company
+			s.salary_structure = a.salary_structure
+			s.payroll_frequency = "Monthly"
+			s.start_date = start
+			s.end_date = end
+			s.insert(ignore_permissions=True)  # india_payroll injects PT/ESI/LWF here
+			s.submit()
+			frappe.db.commit()  # durable per slip
+			created.append({"employee": a.employee_name, "gross": flt(s.gross_pay), "net": flt(s.net_pay)})
+		except Exception as e:
+			frappe.db.rollback()  # discard only this failed slip
+			errors.append({"employee": a.employee_name, "error": str(e)[:140]})
+		finally:
+			frappe.flags.mute_messages = False
+	return {
+		"period": start.strftime("%B %Y"),
+		"created": len(created), "skipped": len(skipped), "errors": errors,
+		"totals": {"gross": sum(c["gross"] for c in created), "net": sum(c["net"] for c in created), "count": len(created)},
+	}
+
+
+@frappe.whitelist()
+def get_unassigned_employees():
+	"""Active employees with no submitted salary-structure assignment — the people
+	who still need compensation set before payroll can run for them."""
+	_require_hr()
+	assigned = {a.employee for a in frappe.get_all("Salary Structure Assignment",
+		filters={"docstatus": 1}, fields=["employee"])}
+	emps = frappe.get_all("Employee", filters={"status": "Active"},
+		fields=["name", "employee_name", "department", "designation"], order_by="employee_name")
+	rows = [{"employee": e.name, "employee_name": e.employee_name,
+			 "department": (e.department or "—").split(" - ")[0], "designation": e.designation or "—"}
+			for e in emps if e.name not in assigned]
+	structures = [s.name for s in frappe.get_all("Salary Structure", filters={"docstatus": 1}, fields=["name"])]
+	return {"employees": rows, "structures": structures, "default_structure": structures[0] if structures else None}
+
+
+@frappe.whitelist(methods=["POST"])
+def bulk_assign_salary(salary_structure, rows, from_date=None):
+	"""Create + submit a Salary Structure Assignment for many employees at once.
+	rows: [{employee, base, employment_state}]. Per-row commit so one failure
+	never undoes the rest. employment_state drives PT/LWF (india_payroll)."""
+	_require_hr()
+	rows = frappe.parse_json(rows) or []
+	from_date = from_date or nowdate()
+	has_state = bool(frappe.get_meta("Salary Structure Assignment").get_field("employment_state"))
+	done, errors = [], []
+	for row in rows:
+		emp = row.get("employee")
+		try:
+			doc = frappe.get_doc({
+				"doctype": "Salary Structure Assignment",
+				"employee": emp,
+				"salary_structure": salary_structure,
+				"from_date": from_date,
+				"base": flt(row.get("base")) or 0,
+				"company": frappe.db.get_value("Employee", emp, "company"),
+			})
+			if has_state and row.get("employment_state"):
+				doc.employment_state = row.get("employment_state")
+			doc.insert(ignore_permissions=True)
+			doc.submit()
+			frappe.db.commit()
+			done.append(emp)
+		except Exception as e:
+			frappe.db.rollback()
+			errors.append({"employee": frappe.db.get_value("Employee", emp, "employee_name") or emp, "error": str(e)[:130]})
+	return {"assigned": len(done), "errors": errors, "total": len(rows)}
 
 
 @frappe.whitelist()
@@ -1308,14 +1565,24 @@ def get_bankfile():
 
 
 # ----------------------------------------------------------- compliance
+def _india_payroll_installed():
+	"""The india_payroll app provides the ESI/PT/LWF statutory engine + registers.
+	India builds assume it's present; UI degrades gracefully when it isn't."""
+	return "india_payroll" in frappe.get_installed_apps()
+
+
+# Component names align with the india_payroll engine (ESI / PT / LWF) and hrms
+# (Provident Fund, Income Tax/TDS). `component` may be a list of aliases.
 COMPLIANCE_META = {
 	"pf": {"title": "Provident Fund (EPF)", "code": "PF", "authority": "EPFO", "component": "Provident Fund",
 		   "sub": "Employees' Provident Fund · monthly ECR filing", "rate": "12% of basic (₹15,000 wage ceiling for EPS)"},
-	"esi": {"title": "Employees' State Insurance", "code": "ESI", "authority": "ESIC", "component": "ESI",
-			"sub": "Medical & cash benefits for employees ≤ ₹21,000", "rate": "Employee 0.75% + Employer 3.25% of gross"},
+	"esi": {"title": "Employees' State Insurance", "code": "ESI", "authority": "ESIC", "component": "Employee State Insurance",
+			"sub": "Medical & cash benefits for employees ≤ ₹21,000", "rate": "4% of gross (employee + employer)"},
 	"pt": {"title": "Professional Tax", "code": "PT", "authority": "State govt.", "component": "Professional Tax",
-		   "sub": "State-levied tax · slabs vary by state", "rate": "₹200/month in most states"},
-	"tds": {"title": "Tax Deducted at Source", "code": "TDS", "authority": "Income Tax Dept.", "component": "TDS",
+		   "sub": "State-levied tax · slabs vary by state", "rate": "Slab-based, by employment state"},
+	"lwf": {"title": "Labour Welfare Fund", "code": "LWF", "authority": "State labour dept.", "component": "Labour Welfare Fund",
+			"sub": "State welfare fund · employee + employer contribution", "rate": "Slab-based, by state (half-yearly in most)"},
+	"tds": {"title": "Tax Deducted at Source", "code": "TDS", "authority": "Income Tax Dept.", "component": ["TDS", "Income Tax"],
 			"sub": "Salary TDS under Section 192 · quarterly 24Q filing", "rate": "As per slab and chosen regime"},
 }
 
@@ -1327,11 +1594,12 @@ def get_compliance(kind):
 	if not c:
 		return {}
 	amount = _component_total(c["component"])
+	comps = c["component"] if isinstance(c["component"], (list, tuple)) else [c["component"]]
 	covered = frappe.db.sql(
 		"""select count(distinct ss.employee) from `tabSalary Slip` ss
 		join `tabSalary Detail` sd on sd.parent=ss.name
-		where ss.docstatus=1 and sd.parentfield='deductions' and sd.salary_component=%s and sd.amount>0""",
-		(c["component"],))[0][0]
+		where ss.docstatus=1 and sd.parentfield='deductions' and sd.salary_component in %s and sd.amount>0""",
+		(tuple(comps),))[0][0]
 	return {
 		"title": c["title"], "code": c["code"], "authority": c["authority"], "sub": c["sub"], "rate": c["rate"],
 		"amount": amount, "covered": covered,
@@ -1408,7 +1676,7 @@ def get_interviews():
 	out = []
 	for i in rows:
 		cand = frappe.db.get_value("Job Applicant", i.job_applicant, "applicant_name") or i.job_applicant
-		out.append({"cand": cand, "round": i.interview_type or "Interview",
+		out.append({"id": i.name, "cand": cand, "round": i.interview_type or "Interview",
 			"when": formatdate(i.scheduled_on, "dd MMM") if i.scheduled_on else "—",
 			"status": i.status or "Pending"})
 	return {"interviews": out}
@@ -1530,7 +1798,15 @@ def apply_leave(leave_type, from_date, to_date, reason=None, half_day=0):
 		"status": "Open",
 		"company": emp.get("company"),
 	})
-	doc.insert(ignore_permissions=True)
+	# hrms emits approver-notification msgprints (balance/block-day warnings,
+	# missing-template notices) during insert; those pollute the response as
+	# _server_messages and make the client treat a successful save as "not clean"
+	# (drawer stays open, no toast). Mute them so the ESS path returns cleanly.
+	frappe.flags.mute_messages = True
+	try:
+		doc.insert(ignore_permissions=True)
+	finally:
+		frappe.flags.mute_messages = False
 	frappe.db.commit()
 	return {"name": doc.name}
 
@@ -1596,6 +1872,506 @@ def submit_regularization(from_date, reason, explanation=None):
 	doc.insert(ignore_permissions=True)
 	frappe.db.commit()
 	return {"name": doc.name}
+
+
+@frappe.whitelist(methods=["POST"])
+def reply_ticket(name, message):
+	"""Post a reply on one of the current user's helpdesk tickets."""
+	if not (message or "").strip():
+		frappe.throw("Write a message first.")
+	issue = frappe.get_doc("Issue", name)
+	if issue.raised_by != frappe.session.user and not (set(HR_ROLES) & set(frappe.get_roles())):
+		frappe.throw(frappe._("You are not permitted to reply to this ticket."), frappe.PermissionError)
+	comm = frappe.get_doc({
+		"doctype": "Communication",
+		"communication_type": "Communication",
+		"communication_medium": "Email",
+		"sent_or_received": "Sent",
+		"reference_doctype": "Issue",
+		"reference_name": name,
+		"content": frappe.utils.escape_html(message).replace("\n", "<br>"),
+		"sender": frappe.session.user,
+		"subject": f"Re: {issue.subject}",
+	})
+	comm.insert(ignore_permissions=True)
+	if issue.status in ("Resolved", "Closed"):
+		issue.status = "Open"
+		issue.save(ignore_permissions=True)
+	frappe.db.commit()
+	return {"ok": True}
+
+
+# Fields an employee may maintain on their OWN Employee record. HR seeds the
+# primary/system-of-record fields at onboarding (name, DOB, DOJ, employee
+# number, work email, designation/department/grade, status, CTC); the employee
+# owns everything personal below. Anything not in this set is ignored server-side.
+SELF_EDITABLE_FIELDS = {
+	# personal
+	"gender", "blood_group", "marital_status",
+	# contact
+	"personal_email", "cell_number", "current_address", "permanent_address",
+	# emergency
+	"person_to_be_contacted", "emergency_phone_number", "relation",
+	# bank (own salary account)
+	"bank_name", "bank_ac_no", "ifsc_code",
+	# statutory id
+	"pan_number",
+}
+
+
+@frappe.whitelist(methods=["POST"])
+def update_my_profile(values=None, **kwargs):
+	"""Let an employee update their OWN self-service profile fields. Only fields
+	in SELF_EDITABLE_FIELDS are written — HR-owned fields are ignored even if sent."""
+	emp = _current_employee()
+	if not emp:
+		frappe.throw("No employee record linked to this user.")
+	data = frappe.parse_json(values) if values else kwargs
+	doc = frappe.get_doc("Employee", emp["name"])
+	meta = frappe.get_meta("Employee")
+	changed = False
+	for field, value in (data or {}).items():
+		if field in SELF_EDITABLE_FIELDS and meta.get_field(field) and value is not None:
+			doc.set(field, value)
+			changed = True
+	if changed:
+		# mute hrms onboarding/notification msgprints so the response stays clean
+		frappe.flags.mute_messages = True
+		try:
+			doc.save(ignore_permissions=True)  # only whitelisted fields were set
+		finally:
+			frappe.flags.mute_messages = False
+		frappe.db.commit()
+	return {"name": doc.name}
+
+
+@frappe.whitelist(methods=["POST"])
+def act_on_regularization(name, action):
+	"""Approve (submit) or reject (delete) an Attendance Request from the HR queue."""
+	_require_hr()
+	if action not in ("approve", "reject"):
+		frappe.throw("Invalid action")
+	doc = frappe.get_doc("Attendance Request", name)
+	if action == "approve":
+		if doc.docstatus == 0:
+			doc.submit()
+	else:
+		if doc.docstatus == 1:
+			doc.cancel()
+		frappe.delete_doc("Attendance Request", name, ignore_permissions=True, force=True)
+	frappe.db.commit()
+	return {"ok": True}
+
+
+@frappe.whitelist()
+def get_new_employee_options():
+	"""Dropdown options for the in-app 'Add employee' form."""
+	_require_hr()
+	return {
+		"companies": [c.name for c in frappe.get_all("Company", fields=["name"], order_by="name")],
+		"genders": [g.name for g in frappe.get_all("Gender", fields=["name"], order_by="name")],
+		"departments": [d.name for d in frappe.get_all("Department", filters={"is_group": 0}, fields=["name"], order_by="name")],
+		"designations": [d.name for d in frappe.get_all("Designation", fields=["name"], order_by="name")],
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def create_employee(first_name, gender, date_of_birth, date_of_joining, last_name=None,
+					company=None, designation=None, department=None, company_email=None):
+	"""Create a new Employee record from the in-app drawer (HR only)."""
+	_require_hr()
+	if not first_name:
+		frappe.throw("First name is required.")
+	doc = frappe.get_doc({
+		"doctype": "Employee",
+		"first_name": first_name,
+		"last_name": last_name,
+		"gender": gender,
+		"date_of_birth": date_of_birth,
+		"date_of_joining": date_of_joining,
+		"company": company or COMPANY_NAME(),
+		"designation": designation,
+		"department": department,
+		"company_email": company_email,
+		"status": "Active",
+	})
+	doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+	return {"name": doc.name, "employee_name": doc.employee_name}
+
+
+# ================================================================ GENERIC UI-FIRST WRITES
+# Link-field option lookups the SPA is allowed to read (names only, not sensitive).
+_LINK_OK = {
+	"Company", "Department", "Designation", "Gender", "Employee", "Shift Type",
+	"Salary Component", "Salary Structure", "Appraisal Cycle", "Interview Type",
+	"Job Opening", "Job Applicant", "Job Offer", "Payroll Period", "Currency",
+	"Leave Type", "Employee Onboarding Template", "Employee Separation Template",
+	"Holiday List", "Branch", "Employment Type", "Employee Grade",
+}
+# Doctypes HR may create from an in-app drawer.
+_CREATE_HR = {
+	"Job Opening", "Job Applicant", "Interview", "Job Offer",
+	"Employee Onboarding", "Employee Separation", "Employee Transfer",
+	"Additional Salary", "Salary Structure Assignment", "Salary Component",
+	"Shift Assignment", "Department", "Designation",
+}
+# Employee self-service docs: created for the logged-in employee (forced employee=self
+# unless an HR/manager is creating on someone's behalf). "Appraisal" is handled inline.
+_CREATE_SELF = {
+	"Employee Tax Exemption Declaration", "Employee Advance",
+	"Compensatory Leave Request", "Leave Encashment",
+}
+
+
+def _is_hr():
+	return frappe.session.user == "Administrator" or bool(set(HR_ROLES) & set(frappe.get_roles()))
+
+
+def _can_manage():
+	roles = set(frappe.get_roles())
+	if frappe.session.user == "Administrator" or (set(HR_ROLES) & roles) or ({"Leave Approver", "Expense Approver"} & roles):
+		return True
+	emp = _emp()
+	return bool(emp and frappe.db.exists("Employee", {"reports_to": emp, "status": ["!=", "Left"]}))
+
+
+@frappe.whitelist()
+def get_link_options(doctype, search=None, filters=None):
+	"""Generic option list for a Link field's target doctype (friendly labels)."""
+	if doctype not in _LINK_OK:
+		frappe.throw(frappe._("Not permitted"), frappe.PermissionError)
+	if not frappe.has_permission(doctype, "read"):
+		return {"options": []}
+	flt = frappe.parse_json(filters) if filters else {}
+	if search:
+		flt["name"] = ["like", f"%{search}%"]
+	title = frappe.get_meta(doctype).title_field
+	if doctype == "Employee":
+		title = "employee_name"
+	fields = ["name"] + ([title] if title and title != "name" else [])
+	rows = frappe.get_all(doctype, filters=flt, fields=fields, limit=50, order_by="modified desc")
+	def _label(r):
+		t = r.get(title) if title else None
+		return f"{t} ({r.name})" if t and t != r.name else r.name
+	return {"options": [{"label": _label(r), "value": r.name} for r in rows]}
+
+
+@frappe.whitelist(methods=["POST"])
+def create_doc(doctype, values):
+	"""Create a draft document from an in-app drawer. Role-gated per doctype."""
+	v = frappe.parse_json(values) or {}
+	me = _current_employee()
+
+	# scope guard: only doctypes this UI is meant to create
+	if doctype not in _CREATE_HR and doctype not in _CREATE_SELF and doctype != "Appraisal":
+		frappe.throw(frappe._("Not permitted"), frappe.PermissionError)
+	# access control: defer to Frappe's own permissions (no parallel role list)
+	if not frappe.has_permission(doctype, "create"):
+		frappe.throw(frappe._("You are not permitted to create this record."), frappe.PermissionError)
+	# employee self-service docs: force employee=self unless an HR/manager acts for others
+	if (doctype in _CREATE_SELF or doctype == "Appraisal") and not _can_manage():
+		if not me:
+			frappe.throw("No employee record linked to this user.")
+		v["employee"] = me["name"]
+	elif doctype in _CREATE_SELF and not v.get("employee") and me:
+		v["employee"] = me["name"]
+
+	meta = frappe.get_meta(doctype)
+	fieldnames = {f.fieldname for f in meta.fields}
+
+	# sensible server-side defaults
+	if "company" in fieldnames:
+		v.setdefault("company", COMPANY_NAME())
+	if "posting_date" in fieldnames and meta.get_field("posting_date").reqd:
+		v.setdefault("posting_date", str(getdate()))
+	if "currency" in fieldnames:
+		comp = v.get("company") or COMPANY_NAME()
+		v.setdefault("currency", frappe.db.get_value("Company", comp, "default_currency") or "INR")
+	for f in meta.fields:
+		if f.fieldname == "naming_series" and f.reqd and f.options:
+			v.setdefault("naming_series", f.options.split("\n")[0].strip())
+
+	# applicant_name convenience for Job Offer
+	if doctype == "Job Offer" and v.get("job_applicant") and not v.get("applicant_name"):
+		v["applicant_name"] = frappe.db.get_value("Job Applicant", v["job_applicant"], "applicant_name")
+
+	# mandatory child table: Employee Transfer needs >=1 property change
+	if doctype == "Employee Transfer":
+		emp = v.get("employee")
+		rows = []
+		new_dept = v.pop("new_department", None)
+		new_desig = v.pop("new_designation", None)
+		if new_dept:
+			rows.append({"property": "Department", "fieldname": "department",
+						 "current": frappe.db.get_value("Employee", emp, "department"), "new": new_dept})
+		if new_desig:
+			rows.append({"property": "Designation", "fieldname": "designation",
+						 "current": frappe.db.get_value("Employee", emp, "designation"), "new": new_desig})
+		if not rows:
+			frappe.throw("Choose a new department or designation for the transfer.")
+		v["transfer_details"] = rows
+
+	# friendly guard: one appraisal per employee per cycle
+	if doctype == "Appraisal" and v.get("employee") and v.get("appraisal_cycle"):
+		existing = frappe.db.exists("Appraisal", {"employee": v["employee"], "appraisal_cycle": v["appraisal_cycle"]})
+		if existing:
+			frappe.throw(frappe._("An appraisal for this cycle already exists."), frappe.DuplicateEntryError)
+
+	doc = frappe.get_doc({"doctype": doctype, **v})
+	doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+	return {"name": doc.name, "doctype": doctype}
+
+
+@frappe.whitelist(methods=["POST"])
+def update_employee(name, values):
+	"""HR edit of a few key Employee fields from an in-app drawer."""
+	if not frappe.has_permission("Employee", "write", doc=name):
+		frappe.throw(frappe._("You are not permitted to edit this employee."), frappe.PermissionError)
+	v = frappe.parse_json(values) or {}
+	allowed = {"designation", "department", "employment_type", "grade",
+			   "reports_to", "company_email", "cell_number", "status", "branch"}
+	doc = frappe.get_doc("Employee", name)
+	for k, val in v.items():
+		if k in allowed and val is not None:
+			doc.set(k, val)
+	doc.save(ignore_permissions=True)
+	frappe.db.commit()
+	return {"name": doc.name}
+
+
+@frappe.whitelist(methods=["POST"])
+def set_interview_result(interview, result, note=None):
+	"""Record an interview outcome in-app without leaving for Desk."""
+	_require_hr()
+	doc = frappe.get_doc("Interview", interview)
+	status_map = {"Cleared": "Cleared", "Rejected": "Rejected", "Under Review": "Under Review"}
+	doc.status = status_map.get(result, doc.status)
+	doc.save(ignore_permissions=True)
+	if note:
+		doc.add_comment("Comment", note)
+	frappe.db.commit()
+	return {"ok": True}
+
+
+@frappe.whitelist()
+def get_doc_detail(doctype, name):
+	"""Read a curated set of fields for an in-app detail drawer."""
+	if doctype not in _CREATE_HR and doctype not in ("Employee", "Employee Onboarding", "Employee Separation"):
+		frappe.throw(frappe._("Not permitted"), frappe.PermissionError)
+	if not _is_hr():
+		frappe.throw(frappe._("Not permitted"), frappe.PermissionError)
+	doc = frappe.get_doc(doctype, name)
+	meta = frappe.get_meta(doctype)
+	fields = []
+	for f in meta.fields:
+		if f.fieldtype in ("Data", "Link", "Select", "Date", "Datetime", "Currency", "Int", "Float", "Small Text", "Text", "Check"):
+			val = doc.get(f.fieldname)
+			if val not in (None, "", 0):
+				fields.append({"label": f.label, "value": val})
+	return {"name": doc.name, "title": doc.get_title(), "status": doc.get("status") or doc.get("docstatus"), "fields": fields[:24]}
+
+
+@frappe.whitelist()
+def force_biometric_sync():
+	"""In-app stand-in for a device pull: report today's checkin count."""
+	_require_hr()
+	today = getdate()
+	count = frappe.db.count("Employee Checkin", {"time": ["between", [f"{today} 00:00:00", f"{today} 23:59:59"]]})
+	return {"ok": True, "synced": count}
+
+
+@frappe.whitelist()
+def get_notifications():
+	"""Unread notifications for the Topbar bell."""
+	rows = frappe.get_all("Notification Log",
+		filters={"for_user": frappe.session.user},
+		fields=["name", "subject", "type", "creation", "read"],
+		order_by="creation desc", limit=20)
+	for r in rows:
+		r["time"] = frappe.utils.pretty_date(r.creation)
+		r["subject"] = frappe.utils.strip_html(r.subject or "")
+	return {"items": rows, "unread": sum(1 for r in rows if not r.read)}
+
+
+@frappe.whitelist(methods=["POST"])
+def mark_notifications_read():
+	frappe.db.set_value("Notification Log", {"for_user": frappe.session.user, "read": 0}, "read", 1, update_modified=False)
+	frappe.db.commit()
+	return {"ok": True}
+
+
+# ---------------------------------------------------------------- reports (in-app)
+def _money(v):
+	return frappe.utils.fmt_money(v or 0, currency="INR")
+
+
+def _report_salary_register():
+	slips = frappe.get_all("Salary Slip", filters={"docstatus": 1},
+		fields=["employee_name", "department", "end_date", "gross_pay", "total_deduction", "net_pay"],
+		order_by="net_pay desc", limit=500)
+	cols = [{"label": "Employee", "key": "emp"}, {"label": "Department", "key": "dept"},
+			{"label": "Period", "key": "period"}, {"label": "Gross", "key": "gross"},
+			{"label": "Deductions", "key": "ded"}, {"label": "Net pay", "key": "net"}]
+	rows = [{"emp": s.employee_name, "dept": (s.department or "").split(" - ")[0],
+			 "period": formatdate(s.end_date, "MMM yyyy") if s.end_date else "—",
+			 "gross": _money(s.gross_pay), "ded": _money(s.total_deduction), "net": _money(s.net_pay)}
+			for s in slips]
+	return cols, rows
+
+
+def _report_employees():
+	emps = frappe.get_all("Employee", filters={"status": ["in", ["Active", "On Leave"]]},
+		fields=["employee_name", "employee_number", "department", "designation", "date_of_joining", "status"],
+		order_by="employee_name", limit=500)
+	cols = [{"label": "Name", "key": "n"}, {"label": "ID", "key": "id"}, {"label": "Department", "key": "dept"},
+			{"label": "Designation", "key": "desig"}, {"label": "Joined", "key": "doj"}, {"label": "Status", "key": "st"}]
+	rows = [{"n": e.employee_name, "id": e.employee_number, "dept": (e.department or "").split(" - ")[0],
+			 "desig": e.designation, "doj": formatdate(e.date_of_joining, "dd MMM yyyy") if e.date_of_joining else "—",
+			 "st": e.status} for e in emps]
+	return cols, rows
+
+
+def _report_leave_balance():
+	allocs = frappe.get_all("Leave Allocation", filters={"docstatus": 1},
+		fields=["employee_name", "leave_type", "total_leaves_allocated", "from_date", "to_date"],
+		order_by="employee_name", limit=500)
+	cols = [{"label": "Employee", "key": "emp"}, {"label": "Leave type", "key": "lt"},
+			{"label": "Allocated", "key": "alloc"}, {"label": "Period", "key": "period"}]
+	rows = [{"emp": a.employee_name, "lt": a.leave_type, "alloc": a.total_leaves_allocated,
+			 "period": f"{formatdate(a.from_date, 'dd MMM')} – {formatdate(a.to_date, 'dd MMM yyyy')}" if a.from_date else "—"}
+			for a in allocs]
+	return cols, rows
+
+
+def _report_attendance():
+	att = frappe.get_all("Attendance", filters={"docstatus": 1},
+		fields=["employee_name", "attendance_date", "status", "working_hours"],
+		order_by="attendance_date desc", limit=500)
+	cols = [{"label": "Employee", "key": "emp"}, {"label": "Date", "key": "date"},
+			{"label": "Status", "key": "st"}, {"label": "Hours", "key": "hrs"}]
+	rows = [{"emp": a.employee_name, "date": formatdate(a.attendance_date, "dd MMM yyyy"),
+			 "st": a.status, "hrs": round(a.working_hours or 0, 1)} for a in att]
+	return cols, rows
+
+
+def _report_bankfile():
+	slips = frappe.get_all("Salary Slip", filters={"docstatus": 1},
+		fields=["employee", "employee_name", "net_pay"], order_by="net_pay desc", limit=500)
+	# batch bank details for all employees (avoid N+1)
+	emp_ids = list({s.employee for s in slips})
+	bank_map = {e.name: e for e in frappe.get_all("Employee", filters={"name": ["in", emp_ids]},
+		fields=["name", "bank_name", "bank_ac_no"])} if emp_ids else {}
+	cols = [{"label": "Employee", "key": "emp"}, {"label": "Bank", "key": "bank"},
+			{"label": "Account", "key": "ac"}, {"label": "Net pay", "key": "net"}]
+	rows = []
+	for s in slips:
+		info = bank_map.get(s.employee) or {}
+		ac = info.get("bank_ac_no") or ""
+		rows.append({"emp": s.employee_name, "bank": info.get("bank_name") or "—",
+					 "ac": ("XXXX " + ac[-4:]) if ac else "—", "net": _money(s.net_pay)})
+	return cols, rows
+
+
+def _report_tds():
+	slips = frappe.get_all("Salary Slip", filters={"docstatus": 1}, fields=["name", "employee", "employee_name"], limit=2000)
+	# batch TDS across all slips in one query (also fixes a bug: parent was never selected)
+	tds_rows = frappe.get_all("Salary Detail",
+		filters={"parent": ["in", [s.name for s in slips]], "parentfield": "deductions", "salary_component": "TDS"},
+		fields=["parent", "amount"]) if slips else []
+	tds_by_slip = {}
+	for d in tds_rows:
+		tds_by_slip[d.parent] = tds_by_slip.get(d.parent, 0) + (d.amount or 0)
+	agg = {}
+	for s in slips:
+		row = agg.setdefault(s.employee, {"emp": s.employee_name, "tds": 0})
+		row["tds"] += tds_by_slip.get(s.name, 0)
+	cols = [{"label": "Employee", "key": "emp"}, {"label": "TDS deducted (FY)", "key": "tds"}]
+	rows = [{"emp": v["emp"], "tds": _money(v["tds"])} for v in sorted(agg.values(), key=lambda x: -x["tds"])]
+	return cols, rows
+
+
+_REPORT_PROVIDERS = {
+	"Salary Register": _report_salary_register,
+	"Employee Information": _report_employees,
+	"Employee Leave Balance": _report_leave_balance,
+	"Monthly Attendance Sheet": _report_attendance,
+	"Bank Remittance": _report_bankfile,
+	"Income Tax Computation": _report_tds,
+}
+
+
+@frappe.whitelist()
+def get_report_data(report_name, filters=None):
+	"""Return columns + rows for an in-app report. Uses real-data providers for the
+	known reports; falls back to running a standard Frappe query report otherwise."""
+	_require_hr()
+	provider = _REPORT_PROVIDERS.get(report_name)
+	if provider:
+		try:
+			cols, rows = provider()
+			return {"columns": cols, "rows": rows, "report": report_name}
+		except Exception as e:
+			return {"error": str(e), "columns": [], "rows": []}
+
+	from frappe.desk.query_report import run
+	flt = frappe.parse_json(filters) if filters else {"company": COMPANY_NAME()}
+	try:
+		res = run(report_name, filters=flt, ignore_prepared_report=True) or {}
+	except Exception as e:
+		return {"error": str(e), "columns": [], "rows": []}
+	cols = []
+	for c in (res.get("columns") or []):
+		if isinstance(c, dict):
+			cols.append({"label": c.get("label") or c.get("fieldname"), "key": c.get("fieldname") or c.get("label")})
+		else:
+			cols.append({"label": str(c), "key": str(c)})
+	rows = []
+	for r in (res.get("result") or []):
+		if isinstance(r, dict):
+			rows.append(r)
+		elif isinstance(r, (list, tuple)):
+			rows.append({cols[i]["key"]: v for i, v in enumerate(r) if i < len(cols)})
+	return {"columns": cols, "rows": rows[:500], "report": report_name}
+
+
+@frappe.whitelist()
+def get_leave_days(leave_type, from_date, to_date, half_day=0):
+	"""Live preview for the apply-leave drawer — days + balance, computed by hrms."""
+	emp = _current_employee()
+	if not (emp and leave_type and from_date and to_date):
+		return {"days": 0, "balance": None}
+	from hrms.hr.doctype.leave_application.leave_application import get_number_of_leave_days, get_leave_balance_on
+	try:
+		days = get_number_of_leave_days(emp["name"], leave_type, from_date, to_date, frappe.utils.cint(half_day))
+		bal = get_leave_balance_on(emp["name"], leave_type, getdate(to_date),
+			consider_all_leaves_in_the_allocation_period=True)
+		return {"days": days, "balance": bal}
+	except Exception:
+		return {"days": 0, "balance": None}
+
+
+@frappe.whitelist()
+def get_my_docs(doctype):
+	"""List the current employee's own records of an ESS self-service doctype."""
+	if doctype not in _CREATE_SELF:
+		frappe.throw(frappe._("Not permitted"), frappe.PermissionError)
+	emp = _current_employee()
+	if not emp:
+		return {"rows": [], "is_submittable": False}
+	meta = frappe.get_meta(doctype)
+	fieldnames = {f.fieldname for f in meta.fields}
+	fields = ["name"]
+	for cand in ("status", "posting_date", "from_date", "work_from_date", "work_end_date",
+				 "leave_type", "leave_period", "advance_amount", "amount", "purpose", "reason", "creation"):
+		if cand in fieldnames:
+			fields.append(cand)
+	if meta.is_submittable:
+		fields.append("docstatus")
+	rows = frappe.get_all(doctype, filters={"employee": emp["name"]},
+		fields=list(dict.fromkeys(fields)), order_by="creation desc", limit=50)
+	return {"rows": rows, "is_submittable": bool(meta.is_submittable)}
 
 
 @frappe.whitelist()

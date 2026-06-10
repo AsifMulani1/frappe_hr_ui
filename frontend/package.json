@@ -14,7 +14,7 @@
     "autoprefixer": "^10.4.19",
     "dayjs": "^1.11.11",
     "feather-icons": "^4.29.1",
-    "frappe-ui": "0.1.105",
+    "frappe-ui": "1.0.0-beta.4",
     "lucide-vue-next": "^0.454.0",
     "pinia": "^2.2.4",
     "postcss": "^8.4.5",
@@ -24,6 +24,7 @@
     "vue-router": "^4.3.2"
   },
   "devDependencies": {
-    "prettier": "^3.3.3"
+    "prettier": "^3.3.3",
+    "vite-plugin-pwa": "^0.20.5"
   }
 }

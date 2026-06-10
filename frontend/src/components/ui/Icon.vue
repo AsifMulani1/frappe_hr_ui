@@ -44,6 +44,7 @@ import {
   X,
   EllipsisVertical,
   Filter,
+  Menu,
 } from "lucide-vue-next"
 
 // Prototype icon key -> lucide component. Single registry so screens reference
@@ -78,6 +79,7 @@ const REGISTRY = {
   check: Check,
   plus: Plus,
   search: Search,
+  menu: Menu,
   bell: Bell,
   chevDown: ChevronDown,
   chevRight: ChevronRight,

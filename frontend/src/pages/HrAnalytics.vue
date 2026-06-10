@@ -6,9 +6,15 @@ import StatTiles from "@/components/ui/StatTiles.vue"
 import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
 import Icon from "@/components/ui/Icon.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
+import { downloadCSV } from "@/utils/actions"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_analytics", auto: true })
 const d = computed(() => r.data || {})
+function exportAnalytics() {
+  const rows = (d.value.dept_counts || []).map(([department, headcount]) => ({ department, headcount }))
+  downloadCSV("headcount-by-department", [{ key: "department", label: "Department" }, { key: "headcount", label: "Headcount" }], rows)
+}
 const genderStr = computed(() => (d.value.gender || []).map(([g, n]) => `${n} ${g[0]}`).join(" · ") || "—")
 const tiles = computed(() => [
   { label: "Headcount", value: d.value.headcount ?? 0, sub: "active", icon: "users", tone: "accent" },
@@ -22,8 +28,9 @@ const maxTen = computed(() => Math.max(1, ...(d.value.tenure || []).map((x) => x
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="People analytics" subtitle="Workforce insights">
-      <template #actions><Button variant="outline" theme="gray" label="Export"><template #prefix><Icon name="download" :size="15" /></template></Button></template>
+      <template #actions><Button variant="outline" theme="gray" label="Export" @click="exportAnalytics"><template #prefix><Icon name="download" :size="15" /></template></Button></template>
     </PageHeader>
+    <AsyncShell :resource="r" loading-text="Loading analytics…">
     <StatTiles :items="tiles" :cols="4" />
     <div class="grid grid-cols-2 gap-5">
       <Card>
@@ -47,5 +54,6 @@ const maxTen = computed(() => Math.max(1, ...(d.value.tenure || []).map((x) => x
         </div>
       </Card>
     </div>
+    </AsyncShell>
   </div>
 </template>

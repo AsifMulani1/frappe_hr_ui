@@ -1,21 +1,38 @@
 <script setup>
-import { computed } from "vue"
+import { reactive, computed } from "vue"
 import { Button, createResource } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import Icon from "@/components/ui/Icon.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
+import FormDrawer from "@/components/ui/FormDrawer.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
+import { useCreate, useLinkOptions } from "@/composables/useDocActions"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_org_builder", auto: true })
 const d = computed(() => r.data || {})
+
+// Add department (in-app structural edit)
+const add = useCreate("Department", { onDone: () => r.reload(), successLabel: "Department added" })
+const departments = useLinkOptions("Department")
+const form = reactive({ department_name: "", parent_department: "" })
+const fields = computed(() => [
+  { key: "department_name", label: "Department name", type: "text", placeholder: "e.g. Platform Engineering", cols: 2 },
+  { key: "parent_department", label: "Reports under", type: "select", options: departments.value, cols: 2 },
+])
+function openAdd() {
+  Object.assign(form, { department_name: "", parent_department: "" })
+  add.openDrawer()
+}
 </script>
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Org chart builder" subtitle="Company reporting structure">
-      <template #actions><Button variant="solid" theme="gray" label="Edit structure"><template #prefix><Icon name="edit" :size="15" /></template></Button></template>
+      <template #actions><Button variant="solid" theme="blue" label="Add department" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
+    <AsyncShell :resource="r" loading-text="Loading org chart…">
     <Card class="overflow-x-auto !p-10">
       <div class="flex min-w-[760px] flex-col items-center">
         <Card v-if="d.top" class="min-w-[190px] text-center !border-blue-100 !bg-blue-50 !px-4 !py-3">
@@ -38,5 +55,10 @@ const d = computed(() => r.data || {})
         </div>
       </div>
     </Card>
+    </AsyncShell>
+
+    <FormDrawer :open="add.open" title="Add department" subtitle="Add a team to the reporting structure"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Add department"
+      @close="add.open = false" @submit="add.submit(form, ['department_name'])" />
   </div>
 </template>

@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from "vue"
 import { Button, createResource } from "frappe-ui"
+import { downloadCSV } from "@/utils/actions"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import StatTiles from "@/components/ui/StatTiles.vue"
 import Card from "@/components/ui/Card.vue"
@@ -10,6 +11,7 @@ import DataTable from "@/components/ui/DataTable.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import Icon from "@/components/ui/Icon.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_team_attendance", auto: true })
 const d = computed(() => r.data || {})
@@ -27,13 +29,22 @@ const columns = [
   { key: "in", label: "Check in", align: "right" },
   { key: "rate", label: "Month %", align: "right" },
 ]
+// CSV needs flat accessors — "Today" and "Check in" live under row.today.
+const exportColumns = [
+  { key: "employee_name", label: "Employee" },
+  { label: "Designation", value: (row) => row.designation },
+  { label: "Today", value: (row) => row.today?.att },
+  { label: "Check in", value: (row) => row.today?.in },
+  { label: "Month %", value: (row) => row.rate },
+]
 </script>
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Team attendance" subtitle="Live status and month trends for your reports">
-      <template #actions><Button variant="outline" theme="gray" label="Export"><template #prefix><Icon name="download" :size="15" /></template></Button></template>
+      <template #actions><Button variant="outline" theme="gray" label="Export" @click="downloadCSV('team-attendance', exportColumns, d.team || [])"><template #prefix><Icon name="download" :size="15" /></template></Button></template>
     </PageHeader>
+    <AsyncShell :resource="r" loading-text="Loading team attendance…">
     <StatTiles :items="tiles" :cols="4" />
     <Card :pad="false">
       <div class="p-4">
@@ -49,5 +60,6 @@ const columns = [
         </DataTable>
       </div>
     </Card>
+    </AsyncShell>
   </div>
 </template>

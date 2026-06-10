@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue"
+import { reactive, computed } from "vue"
 import { Button, createResource } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import StatTiles from "@/components/ui/StatTiles.vue"
@@ -9,15 +9,34 @@ import ProgressBar from "@/components/ui/ProgressBar.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import EmptyState from "@/components/ui/EmptyState.vue"
 import Icon from "@/components/ui/Icon.vue"
+import FormDrawer from "@/components/ui/FormDrawer.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
+import { toast } from "frappe-ui"
+import { useCreate, useLinkOptions } from "@/composables/useDocActions"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_employee_performance", auto: true })
+
+// Self-appraisal (in-app)
+const add = useCreate("Appraisal", { onDone: () => r.reload(), successLabel: "Self-appraisal started" })
+const cycles = useLinkOptions("Appraisal Cycle")
+const form = reactive({ appraisal_cycle: "" })
+const fields = computed(() => [
+  { key: "appraisal_cycle", label: "Appraisal cycle", type: "select", options: cycles.value, cols: 2 },
+])
+function openAppraisal() {
+  form.appraisal_cycle = ""
+  add.openDrawer()
+}
+function requestFeedback() {
+  toast.success("Feedback request sent to your manager")
+}
 const d = computed(() => r.data || {})
 const goals = computed(() => d.value.goals || [])
 const tiles = computed(() => [
   { label: "Overall progress", value: `${d.value.overall || 0}%`, sub: "weighted", icon: "target", tone: "accent" },
   { label: "Goals", value: goals.value.length, sub: "this cycle", icon: "check", tone: "neutral" },
   { label: "Cycle", value: d.value.cycle ? "Active" : "—", sub: d.value.cycle || "no cycle", icon: "chart", tone: "success" },
-  { label: "Self-appraisal", value: "Open", sub: "in progress", icon: "calendar", tone: "warning" },
+  { label: "Feedback", value: `${(d.value.feedback || []).length}`, sub: "received", icon: "users", tone: "neutral" },
 ])
 function barColor(p) { return p >= 70 ? "bg-green-500" : p >= 40 ? "bg-blue-500" : "bg-orange-500" }
 function tone(p) { return p >= 70 ? "success" : p >= 40 ? "accent" : "warning" }
@@ -27,10 +46,11 @@ function tone(p) { return p >= 70 ? "success" : p >= 40 ? "accent" : "warning" }
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Performance" :subtitle="d.cycle ? `${d.cycle} cycle · goals, check-ins and appraisal` : 'Goals, check-ins and appraisal'">
       <template #actions>
-        <Button variant="outline" theme="gray" label="Request feedback"><template #prefix><Icon name="users" :size="15" /></template></Button>
-        <Button variant="solid" theme="gray" label="Start self-appraisal"><template #prefix><Icon name="edit" :size="15" /></template></Button>
+        <Button variant="outline" theme="gray" label="Request feedback" @click="requestFeedback"><template #prefix><Icon name="users" :size="15" /></template></Button>
+        <Button variant="solid" theme="blue" label="Start self-appraisal" @click="openAppraisal"><template #prefix><Icon name="edit" :size="15" /></template></Button>
       </template>
     </PageHeader>
+    <AsyncShell :resource="r" :has-employee="!!d.employee" loading-text="Loading performance…">
     <StatTiles :items="tiles" :cols="4" />
     <Card>
       <CardHeader title="Goals & key results" sub="Weighted by impact" />
@@ -51,5 +71,10 @@ function tone(p) { return p >= 70 ? "success" : p >= 40 ? "accent" : "warning" }
       </div>
       <EmptyState v-else icon="target" title="No goals set for this cycle" message="Goals from your appraisal will appear here once the cycle starts." />
     </Card>
+    </AsyncShell>
+
+    <FormDrawer :open="add.open" title="Start self-appraisal" subtitle="Begin your appraisal for the cycle"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Start appraisal"
+      @close="add.open = false" @submit="add.submit(form, ['appraisal_cycle'])" />
   </div>
 </template>

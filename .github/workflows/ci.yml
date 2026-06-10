@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Self-test (frappe_hr_ui)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mariadb-admin ping" --health-interval=5s --health-timeout=2s --health-retries=10
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Clone
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Add to Hosts
+        run: echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
+
+      - name: Install (bench + frappe + erpnext + hrms + frappe_hr_ui)
+        run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
+
+      - name: Build the front-end
+        run: |
+          cd ~/frappe-bench/apps/frappe_hr_ui/frontend
+          yarn install --frozen-lockfile
+          yarn build
+          cd ~/frappe-bench && bench --site test_site clear-cache
+
+      - name: Seed demo data
+        run: |
+          cd ~/frappe-bench
+          bench --site test_site execute frappe_hr_ui.setup_company.run
+          bench --site test_site execute frappe_hr_ui.seed.run
+
+      - name: Run golden self-test
+        run: |
+          cd ~/frappe-bench
+          bench --site test_site execute frappe_hr_ui.selftest.ci

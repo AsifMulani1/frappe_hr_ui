@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue"
+import { ref, computed } from "vue"
 import { Button, createResource } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
@@ -8,9 +8,12 @@ import FilterChip from "@/components/ui/FilterChip.vue"
 import DataTable from "@/components/ui/DataTable.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import Icon from "@/components/ui/Icon.vue"
+import ReportDrawer from "@/components/ui/ReportDrawer.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_challan", auto: true })
 const rows = computed(() => r.data?.rows || [])
+const reportOpen = ref(false)
 const columns = [
   { key: "ref", label: "Reference" },
   { key: "type", label: "Type" },
@@ -24,8 +27,9 @@ const columns = [
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Challan & returns" subtitle="All statutory challans and filing references in one place">
-      <template #actions><Button variant="solid" theme="gray" label="Generate challan"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+      <template #actions><Button variant="solid" theme="blue" label="Generate challan" @click="reportOpen = true"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
+    <AsyncShell :resource="r" loading-text="Loading challans…">
     <Card class="!p-4">
       <Toolbar search="Search challans…"><FilterChip label="Type" /><FilterChip label="Status" active /></Toolbar>
       <DataTable :columns="columns" :rows="rows" row-key="ref" :loading="r.loading" empty-title="No challans generated">
@@ -36,5 +40,8 @@ const columns = [
         <template #cell-st="{ row }"><StatusBadge :tone="row.tone" size="sm" dot :label="row.st" /></template>
       </DataTable>
     </Card>
+    </AsyncShell>
+
+    <ReportDrawer :open="reportOpen" report="Salary Register" title="Statutory deductions" @close="reportOpen = false" />
   </div>
 </template>

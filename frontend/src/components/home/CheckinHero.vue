@@ -1,11 +1,14 @@
 <script setup>
 import { computed } from "vue"
-import { Button, Badge, createResource } from "frappe-ui"
+import { useRouter } from "vue-router"
+import { Button, Badge, createResource, toast } from "frappe-ui"
 import Card from "@/components/ui/Card.vue"
 import Icon from "@/components/ui/Icon.vue"
 import Ring from "./Ring.vue"
 import WeekStrip from "./WeekStrip.vue"
 import { fmtMins } from "@/composables/useEmployeeHome"
+
+const router = useRouter()
 
 const props = defineProps({
   today: { type: Object, default: () => ({}) },
@@ -21,7 +24,11 @@ const shiftHrs = computed(() => Math.round((props.today?.target_minutes || 540) 
 
 const toggle = createResource({
   url: "frappe_hr_ui.api.toggle_checkin",
-  onSuccess: () => props.onReload(),
+  onSuccess: () => {
+    toast.success(checkedIn.value ? "Checked out" : "Checked in")
+    props.onReload()
+  },
+  onError: (e) => toast.error(e?.messages?.[0] || "Couldn't update your check-in. Please try again."),
 })
 </script>
 
@@ -32,7 +39,7 @@ const toggle = createResource({
         <div class="text-[15px] font-medium text-ink-gray-9">Today's attendance</div>
         <Badge v-if="shift" variant="subtle" theme="gray" size="sm" :label="shift" />
       </div>
-      <Button variant="ghost" size="sm" label="View history">
+      <Button variant="ghost" size="sm" label="View history" @click="router.push('/attendance')">
         <template #suffix><Icon name="arrowRight" :size="15" /></template>
       </Button>
     </div>
@@ -73,7 +80,7 @@ const toggle = createResource({
           >
             <template #prefix><Icon :name="checkedIn ? 'logout' : 'login'" :size="15" /></template>
           </Button>
-          <Button variant="outline" theme="gray" label="Break" />
+          <Button variant="outline" theme="gray" label="Break" @click="router.push('/attendance')" />
         </div>
       </div>
 
@@ -83,7 +90,7 @@ const toggle = createResource({
       <div class="flex flex-col gap-4 p-5">
         <div class="flex items-center justify-between">
           <div class="text-[12.5px] font-medium text-ink-gray-5">This week</div>
-          <button class="border-0 bg-transparent p-0 text-[12.5px] font-medium text-blue-600">
+          <button class="border-0 bg-transparent p-0 text-[12.5px] font-medium text-blue-600" @click="router.push('/attendance')">
             Regularize
           </button>
         </div>

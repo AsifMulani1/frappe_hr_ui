@@ -9,7 +9,9 @@ import FilterChip from "@/components/ui/FilterChip.vue"
 import DataTable from "@/components/ui/DataTable.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import Drawer from "@/components/ui/Drawer.vue"
+import DateField from "@/components/ui/DateField.vue"
 import Icon from "@/components/ui/Icon.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 import { formatINR } from "@/utils/formatters"
 
 const props = defineProps({
@@ -35,7 +37,9 @@ const submit = createResource({
   onError(e) { toast.error(e?.messages?.[0] || "Couldn't submit claim") },
 })
 function submitClaim() {
-  if (!form.expense_type || !form.amount) { toast.error("Pick a category and amount"); return }
+  if (!form.expense_type) { toast.error("Pick a category"); return }
+  if (!(Number(form.amount) > 0)) { toast.error("Enter a valid amount"); return }
+  if (!form.expense_date) { toast.error("Pick the date of expense"); return }
   submit.submit({ ...form })
 }
 const STATUS_TONE = { Approved: "success", Draft: "warning", Paid: "accent", Rejected: "danger" }
@@ -61,9 +65,10 @@ const columns = [
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader :title="title" :subtitle="subtitle">
       <template #actions>
-        <Button variant="solid" theme="gray" :label="addLabel" @click="open = true"><template #prefix><Icon name="plus" :size="15" /></template></Button>
+        <Button variant="solid" theme="blue" :label="addLabel" @click="open = true"><template #prefix><Icon name="plus" :size="15" /></template></Button>
       </template>
     </PageHeader>
+    <AsyncShell :resource="r" :has-employee="!!d.employee" loading-text="Loading claims…">
     <StatTiles :items="tiles" :cols="3" />
     <Card :pad="false">
       <div class="p-4">
@@ -84,16 +89,17 @@ const columns = [
         </DataTable>
       </div>
     </Card>
+    </AsyncShell>
     <Drawer :open="open" :title="addLabel" subtitle="Submit for approval" :width="480" @close="open = false">
       <div class="flex flex-col gap-4">
         <FormControl type="select" label="Category" :options="typeOptions" v-model="form.expense_type" />
         <div class="grid grid-cols-2 gap-3">
           <FormControl type="number" label="Amount (₹)" placeholder="0" v-model="form.amount" />
-          <FormControl type="date" label="Date of expense" v-model="form.expense_date" />
+          <DateField label="Date of expense" v-model="form.expense_date" />
         </div>
         <FormControl type="textarea" label="Description" placeholder="What was this for?" v-model="form.description" />
       </div>
-      <template #footer><Button variant="ghost" label="Cancel" @click="open = false" /><Button variant="solid" theme="gray" label="Submit claim" :loading="submit.loading" @click="submitClaim" /></template>
+      <template #footer><Button variant="ghost" label="Cancel" @click="open = false" /><Button variant="solid" theme="blue" label="Submit claim" :loading="submit.loading" @click="submitClaim" /></template>
     </Drawer>
   </div>
 </template>

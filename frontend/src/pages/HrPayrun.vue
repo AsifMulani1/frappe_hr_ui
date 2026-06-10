@@ -1,15 +1,50 @@
 <script setup>
-import { computed } from "vue"
-import { Button, createResource } from "frappe-ui"
+import { ref, computed, watch } from "vue"
+import { Button, createResource, toast } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import StatTiles from "@/components/ui/StatTiles.vue"
 import Card from "@/components/ui/Card.vue"
 import Toolbar from "@/components/ui/Toolbar.vue"
 import DataTable from "@/components/ui/DataTable.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
+import Drawer from "@/components/ui/Drawer.vue"
+import DateField from "@/components/ui/DateField.vue"
 import Icon from "@/components/ui/Icon.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 import { formatINR, formatINRShort } from "@/utils/formatters"
+
+// ---- Run payroll (generate + submit slips for the month) ----
+const runOpen = ref(false)
+const period = ref("")
+function monthBounds(dateStr) {
+  const d = new Date(dateStr), pad = (n) => String(n).padStart(2, "0")
+  const first = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-01`
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+  return { first, last: `${last.getFullYear()}-${pad(last.getMonth() + 1)}-${pad(last.getDate())}` }
+}
+const preview = createResource({ url: "frappe_hr_ui.api.preview_payroll" })
+watch(period, (p) => { if (p) preview.fetch({ start_date: monthBounds(p).first }) })
+function openRun() {
+  const now = new Date()
+  period.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`
+  runOpen.value = true
+}
+const run = createResource({
+  url: "frappe_hr_ui.api.run_payroll",
+  onSuccess(res) {
+    const msg = `${res.created} slip(s) created${res.skipped ? `, ${res.skipped} skipped` : ""}${res.errors?.length ? `, ${res.errors.length} failed` : ""}`
+    res.errors?.length ? toast.warning(msg) : toast.success(msg)
+    runOpen.value = false
+    r.reload()
+  },
+  onError(e) { toast.error(e?.messages?.[0] || "Couldn't run payroll") },
+})
+function doRun() {
+  if (!period.value) { toast.error("Pick a month"); return }
+  const { first, last } = monthBounds(period.value)
+  run.submit({ start_date: first, end_date: last })
+}
 
 const r = createResource({ url: "frappe_hr_ui.api.get_payroll_run", auto: true })
 const d = computed(() => r.data || {})
@@ -36,8 +71,9 @@ const columns = [
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader :title="`Payroll run — ${d.period || ''}`" subtitle="Monthly cycle">
-      <template #actions><Button variant="solid" theme="gray" label="Submit for approval"><template #prefix><Icon name="check" :size="15" /></template></Button></template>
+      <template #actions><Button variant="solid" theme="blue" label="Run payroll" @click="openRun"><template #prefix><Icon name="rupee" :size="15" /></template></Button></template>
     </PageHeader>
+    <AsyncShell :resource="r" loading-text="Loading payroll run…">
     <Card class="mb-5">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center">
@@ -67,5 +103,24 @@ const columns = [
         <template #cell-net_pay="{ row }"><span class="tnum font-medium">{{ formatINR(row.net_pay) }}</span></template>
       </DataTable>
     </Card>
+    </AsyncShell>
+
+    <Drawer :open="runOpen" title="Run payroll" subtitle="Generate and submit salary slips for the month" :width="460" @close="runOpen = false">
+      <div class="flex flex-col gap-4">
+        <DateField label="Payroll month" v-model="period" placeholder="Pick any date in the month" />
+        <div v-if="preview.data" class="rounded-md border border-outline-gray-1 bg-surface-gray-1 p-3.5 text-[13px]">
+          <div class="font-medium text-ink-gray-9">{{ preview.data.period }}</div>
+          <div class="mt-1 text-ink-gray-6">
+            <span class="font-medium text-ink-gray-9 tnum">{{ preview.data.pending }}</span> employee(s) to process
+            <span v-if="preview.data.eligible - preview.data.pending"> · {{ preview.data.eligible - preview.data.pending }} already run</span>
+          </div>
+        </div>
+        <p class="text-[11.5px] text-ink-gray-4">Statutory deductions (PF, PT, ESI, LWF, TDS) are computed automatically. Slips already created for this month are skipped.</p>
+      </div>
+      <template #footer>
+        <Button variant="ghost" label="Cancel" @click="runOpen = false" />
+        <Button variant="solid" theme="blue" :label="`Run payroll${preview.data?.pending ? ` (${preview.data.pending})` : ''}`" :loading="run.loading" :disabled="!preview.data?.pending" @click="doRun" />
+      </template>
+    </Drawer>
   </div>
 </template>

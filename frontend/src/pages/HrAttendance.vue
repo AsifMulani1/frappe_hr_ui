@@ -11,6 +11,7 @@ import DataTable from "@/components/ui/DataTable.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import Icon from "@/components/ui/Icon.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const router = useRouter()
 const r = createResource({ url: "frappe_hr_ui.api.get_hr_attendance", auto: true })
@@ -36,8 +37,9 @@ const columns = [
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Attendance workspace" subtitle="Company-wide attendance today">
-      <template #actions><Button variant="solid" theme="gray" label="Regularizations" @click="router.push({ name: 'HrRegularize' })"><template #prefix><Icon name="inbox" :size="15" /></template></Button></template>
+      <template #actions><Button variant="solid" theme="blue" label="Regularizations" @click="router.push({ name: 'HrRegularize' })"><template #prefix><Icon name="inbox" :size="15" /></template></Button></template>
     </PageHeader>
+    <AsyncShell :resource="r" loading-text="Loading attendance…">
     <StatTiles :items="tiles" :cols="4" />
     <Card class="!p-4">
       <Toolbar search="Search employees…"><FilterChip label="Department" /><FilterChip label="Status" /><FilterChip label="Location" /></Toolbar>
@@ -48,5 +50,6 @@ const columns = [
         <template #cell-department="{ row }"><span class="text-ink-gray-7">{{ row.department }}</span></template>
       </DataTable>
     </Card>
+    </AsyncShell>
   </div>
 </template>

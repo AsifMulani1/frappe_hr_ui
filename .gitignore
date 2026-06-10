@@ -1,5 +1,20 @@
 *.pyc
 __pycache__/
-node_modules/
-frappe_hr_ui/public/frontend/
 .DS_Store
+
+# dependencies (installed on deploy)
+node_modules/
+**/node_modules/
+frappe_hr_ui/public/node_modules
+
+# local backups / scratch
+*.bak
+*.pre-fui-v1.bak
+
+# source maps — built assets ARE committed (self-contained deploy on Frappe Cloud),
+# but the .map files are large and not needed at runtime
+*.map
+
+# vite dev cache
+frontend/.vite
+frontend/dist

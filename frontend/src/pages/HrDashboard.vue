@@ -7,6 +7,7 @@ import StatTiles from "@/components/ui/StatTiles.vue"
 import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
 import Icon from "@/components/ui/Icon.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 import { formatINRShort } from "@/utils/formatters"
 
 const router = useRouter()
@@ -29,8 +30,9 @@ const maxFunnel = computed(() => Math.max(1, ...(d.value.funnel || []).map((x) =
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="HR dashboard" :subtitle="`Frappe Technologies · ${d.headcount ?? 0} employees`">
-      <template #actions><Button variant="solid" theme="gray" label="Run payroll" @click="router.push({ name: 'HrPayrun' }).catch(() => {})"><template #prefix><Icon name="rupee" :size="15" /></template></Button></template>
+      <template #actions><Button variant="solid" theme="blue" label="Run payroll" @click="router.push({ name: 'HrPayrun' }).catch(() => {})"><template #prefix><Icon name="rupee" :size="15" /></template></Button></template>
     </PageHeader>
+    <AsyncShell :resource="r" loading-text="Loading dashboard…">
     <StatTiles :items="tiles" :cols="4" />
     <div class="grid items-start gap-5" style="grid-template-columns: minmax(0,1fr) 340px">
       <div class="flex flex-col gap-5">
@@ -80,5 +82,6 @@ const maxFunnel = computed(() => Math.max(1, ...(d.value.funnel || []).map((x) =
         </div>
       </Card>
     </div>
+    </AsyncShell>
   </div>
 </template>

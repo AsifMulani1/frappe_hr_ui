@@ -6,6 +6,7 @@ import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import Icon from "@/components/ui/Icon.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_statcal", auto: true })
 const events = computed(() => r.data?.events || [])
@@ -15,6 +16,7 @@ const TONE_BG = { danger: "border-red-100 bg-red-50 text-red-600", warning: "bor
 <template>
   <div class="mx-auto max-w-[1100px] px-6 py-[22px]">
     <PageHeader title="Statutory calendar" subtitle="Upcoming compliance deadlines" />
+    <AsyncShell :resource="r" loading-text="Loading calendar…">
     <Card>
       <CardHeader title="Upcoming deadlines" :sub="`${events.length} events`" icon="calendar" />
       <div class="flex flex-col">
@@ -30,5 +32,6 @@ const TONE_BG = { danger: "border-red-100 bg-red-50 text-red-600", warning: "bor
         </div>
       </div>
     </Card>
+    </AsyncShell>
   </div>
 </template>

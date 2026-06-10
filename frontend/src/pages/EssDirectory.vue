@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from "vue"
-import { Button, createResource } from "frappe-ui"
+import { Button, createResource, toast } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
 import Toolbar from "@/components/ui/Toolbar.vue"
@@ -11,6 +11,8 @@ import Drawer from "@/components/ui/Drawer.vue"
 import Field from "@/components/ui/Field.vue"
 import Icon from "@/components/ui/Icon.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
+import { mailto } from "@/utils/actions"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_directory", auto: true })
 const view = ref("grid")
@@ -24,10 +26,16 @@ const people = computed(() => {
   if (dept.value !== "All") list = list.filter((p) => p.department === dept.value)
   if (q.value) {
     const s = q.value.toLowerCase()
-    list = list.filter((p) => (p.employee_name + p.designation + (p.department || "")).toLowerCase().includes(s))
+    list = list.filter((p) => ((p.employee_name || "") + (p.designation || "") + (p.department || "")).toLowerCase().includes(s))
   }
   return list
 })
+function copyEmail() {
+  const email = drawer.value?.company_email
+  if (!email) { toast.error("No email address on file"); return }
+  navigator.clipboard?.writeText(email)
+  toast.success("Email address copied")
+}
 const STATUS_TONE = { Active: "success", "On Leave": "warning", "Notice period": "neutral", Probation: "info" }
 const columns = [
   { key: "employee_name", label: "Name" },
@@ -43,6 +51,7 @@ const columns = [
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="People directory" :subtitle="`${(r.data?.people || []).length} people across ${(r.data?.departments || []).length} departments`" />
 
+    <AsyncShell :resource="r" loading-text="Loading directory…">
     <Toolbar v-model="q" search="Search by name, team or role…">
       <div class="flex flex-wrap gap-1.5">
         <button v-for="x in depts.slice(0, 6)" :key="x" @click="dept = x"
@@ -69,7 +78,7 @@ const columns = [
       </Card>
     </div>
 
-    <DataTable v-else :columns="columns" :rows="people" row-key="name" @row-click="drawer = $event">
+    <DataTable v-else :columns="columns" :rows="people" row-key="name" :loading="r.loading" @row-click="drawer = $event">
       <template #cell-employee_name="{ row }">
         <div class="flex items-center gap-2.5"><InitialsAvatar :name="row.employee_name" :image="row.image" :size="30" />
           <div><div class="font-medium">{{ row.employee_name }}</div><div class="tnum text-[11.5px] text-ink-gray-5">{{ row.employee_number }}</div></div></div>
@@ -79,6 +88,7 @@ const columns = [
       <template #cell-manager_name="{ row }"><span class="text-ink-gray-7">{{ row.manager_name }}</span></template>
       <template #cell-status="{ row }"><StatusBadge :tone="STATUS_TONE[row.status] || 'neutral'" size="sm" dot :label="row.status" /></template>
     </DataTable>
+    </AsyncShell>
 
     <Drawer :open="!!drawer" :width="420" @close="drawer = null">
       <template #head>
@@ -96,8 +106,8 @@ const columns = [
         <Field label="Work email" :value="drawer.company_email" full />
       </div>
       <template #footer>
-        <Button variant="outline" theme="gray" label="Email" class="flex-1" />
-        <Button variant="solid" theme="gray" label="View profile" class="flex-1" />
+        <Button variant="outline" theme="gray" label="Copy email" class="flex-1" @click="copyEmail" />
+        <Button variant="solid" theme="blue" label="Send email" class="flex-1" @click="mailto(drawer?.company_email)" />
       </template>
     </Drawer>
   </div>

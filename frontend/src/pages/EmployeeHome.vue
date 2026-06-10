@@ -1,6 +1,7 @@
 <script setup>
 import { computed, inject } from "vue"
-import { Button, createResource } from "frappe-ui"
+import { useRouter } from "vue-router"
+import { Button, createResource, toast } from "frappe-ui"
 import Icon from "@/components/ui/Icon.vue"
 import CheckinHero from "@/components/home/CheckinHero.vue"
 import LeaveBalanceCard from "@/components/home/LeaveBalanceCard.vue"
@@ -14,6 +15,7 @@ import CelebrationsCard from "@/components/home/CelebrationsCard.vue"
 import { useEmployeeHome } from "@/composables/useEmployeeHome"
 
 const dayjs = inject("$dayjs")
+const router = useRouter()
 const home = useEmployeeHome()
 
 const d = computed(() => home.data || {})
@@ -32,7 +34,11 @@ const dateLine = computed(() => {
 
 const headerToggle = createResource({
   url: "frappe_hr_ui.api.toggle_checkin",
-  onSuccess: () => home.reload(),
+  onSuccess: () => {
+    toast.success(checkedIn.value ? "Checked out" : "Checked in")
+    home.reload()
+  },
+  onError: (e) => toast.error(e?.messages?.[0] || "Couldn't update your check-in. Please try again."),
 })
 const checkedIn = computed(() => d.value.today?.checked_in)
 </script>
@@ -73,7 +79,7 @@ const checkedIn = computed(() => d.value.today?.checked_in)
           <div class="mt-1 text-[13.5px] text-ink-gray-5">{{ dateLine }}</div>
         </div>
         <div class="flex gap-2">
-          <Button variant="outline" theme="gray" label="Apply for leave">
+          <Button variant="outline" theme="gray" label="Apply for leave" @click="router.push('/leave')">
             <template #prefix><Icon name="calendar" :size="15" /></template>
           </Button>
           <Button

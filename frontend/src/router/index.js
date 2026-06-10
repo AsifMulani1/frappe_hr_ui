@@ -26,6 +26,43 @@ const routes = [
   { path: "/helpdesk", name: "EssHelpdesk", component: () => import("@/pages/EssHelpdesk.vue") },
   { path: "/directory", name: "EssDirectory", component: () => import("@/pages/EssDirectory.vue") },
   { path: "/announcements", name: "EssAnnouncements", component: () => import("@/pages/EssAnnouncements.vue") },
+  {
+    path: "/advances", name: "EssAdvance", component: () => import("@/pages/EssRequest.vue"),
+    props: {
+      doctype: "Employee Advance", title: "Advances", subtitle: "Request a salary or travel advance", addLabel: "New advance",
+      fields: [
+        { key: "purpose", label: "Purpose", type: "textarea", cols: 2, placeholder: "What is this advance for?" },
+        { key: "advance_amount", label: "Amount (₹)", type: "number", cols: 1, placeholder: "0" },
+      ],
+      required: ["purpose", "advance_amount"],
+      listColumns: [{ key: "name", label: "Reference" }, { key: "purpose", label: "Purpose" }, { key: "advance_amount", label: "Amount" }, { key: "posting_date", label: "Date" }],
+    },
+  },
+  {
+    path: "/comp-off", name: "EssCompOff", component: () => import("@/pages/EssRequest.vue"),
+    props: {
+      doctype: "Compensatory Leave Request", title: "Comp-off", subtitle: "Claim time off for working on a holiday", addLabel: "Request comp-off",
+      fields: [
+        { key: "work_from_date", label: "Worked from", type: "date", cols: 1 },
+        { key: "work_end_date", label: "Worked to", type: "date", cols: 1 },
+        { key: "reason", label: "Reason", type: "textarea", cols: 2 },
+      ],
+      required: ["work_from_date", "work_end_date", "reason"],
+      listColumns: [{ key: "name", label: "Reference" }, { key: "work_from_date", label: "Worked on" }, { key: "reason", label: "Reason" }],
+    },
+  },
+  {
+    path: "/encashment", name: "EssEncashment", component: () => import("@/pages/EssRequest.vue"),
+    props: {
+      doctype: "Leave Encashment", title: "Leave encashment", subtitle: "Encash your eligible leave balance", addLabel: "Request encashment",
+      fields: [
+        { key: "leave_period", label: "Leave period", type: "select", linkDoctype: "Leave Period", cols: 2 },
+        { key: "leave_type", label: "Leave type", type: "select", linkDoctype: "Leave Type", cols: 2 },
+      ],
+      required: ["leave_period", "leave_type"],
+      listColumns: [{ key: "name", label: "Reference" }, { key: "leave_type", label: "Leave type" }],
+    },
+  },
 
   // Manager
   { path: "/team", name: "MgrDashboard", component: () => import("@/pages/MgrDashboard.vue") },
@@ -59,6 +96,7 @@ const routes = [
   { path: "/compliance/pf", name: "CompliancePf", component: () => import("@/pages/ComplianceScreen.vue"), props: { kind: "pf" } },
   { path: "/compliance/esi", name: "ComplianceEsi", component: () => import("@/pages/ComplianceScreen.vue"), props: { kind: "esi" } },
   { path: "/compliance/pt", name: "CompliancePt", component: () => import("@/pages/ComplianceScreen.vue"), props: { kind: "pt" } },
+  { path: "/compliance/lwf", name: "ComplianceLwf", component: () => import("@/pages/ComplianceScreen.vue"), props: { kind: "lwf" } },
   { path: "/compliance/tds", name: "ComplianceTds", component: () => import("@/pages/ComplianceScreen.vue"), props: { kind: "tds" } },
   { path: "/challan", name: "HrChallan", component: () => import("@/pages/HrChallan.vue") },
   { path: "/statutory-calendar", name: "HrStatcal", component: () => import("@/pages/HrStatcal.vue") },
@@ -73,7 +111,108 @@ const routes = [
   { path: "/survey", name: "HrSurvey", component: () => import("@/pages/HrSurvey.vue") },
   { path: "/analytics", name: "HrAnalytics", component: () => import("@/pages/HrAnalytics.vue") },
   { path: "/reports", name: "HrReports", component: () => import("@/pages/HrReports.vue") },
-  { path: "/settings", name: "HrSettings", component: () => import("@/pages/HrSettings.vue") },
+  { path: "/payroll", name: "PayrollDashboard", component: () => import("@/pages/PayrollDashboard.vue") },
+  { path: "/recruitment", name: "RecruitmentDashboard", component: () => import("@/pages/RecruitmentDashboard.vue") },
+  { path: "/settings", name: "Settings", component: () => import("@/pages/SettingsHub.vue") },
+  { path: "/settings/general", name: "HrSettings", component: () => import("@/pages/HrSettings.vue") },
+
+  // Configuration (generic metadata-driven doctype admin — no Desk)
+  {
+    path: "/config/leave-types", name: "CfgLeaveType",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Leave Type", title: "Leave Types", subtitle: "Configure leave types and accrual rules" },
+  },
+  {
+    path: "/config/salary-components", name: "CfgSalaryComponent",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Salary Component", title: "Salary Components", subtitle: "Earnings and deductions used in salary structures" },
+  },
+  {
+    path: "/config/leave-policies", name: "CfgLeavePolicy",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Leave Policy", title: "Leave Policies", subtitle: "Bundle leave types into assignable policies" },
+  },
+  {
+    path: "/config/shift-types", name: "CfgShiftType",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Shift Type", title: "Shift Types", subtitle: "Working-hour patterns and grace rules" },
+  },
+  {
+    path: "/config/holiday-lists", name: "CfgHolidayList",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Holiday List", title: "Holiday Lists", subtitle: "Company and location holiday calendars" },
+  },
+  {
+    path: "/config/expense-types", name: "CfgExpenseType",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Expense Claim Type", title: "Expense Types", subtitle: "Categories employees can claim against" },
+  },
+  {
+    path: "/config/income-tax-slabs", name: "CfgTaxSlab",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Income Tax Slab", title: "Income Tax Slabs", subtitle: "Tax regimes and slab rates" },
+  },
+  {
+    path: "/config/departments", name: "CfgDepartment",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Department", title: "Departments", subtitle: "Org structure" },
+  },
+  {
+    path: "/config/designations", name: "CfgDesignation",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Designation", title: "Designations", subtitle: "Job titles" },
+  },
+  {
+    path: "/config/grades", name: "CfgGrade",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Employee Grade", title: "Employee Grades", subtitle: "Grades and default structures" },
+  },
+  {
+    path: "/config/employment-types", name: "CfgEmploymentType",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Employment Type", title: "Employment Types", subtitle: "Full-time, contract, intern, etc." },
+  },
+  {
+    path: "/config/appraisal-templates", name: "CfgAppraisalTemplate",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Appraisal Template", title: "Appraisal Templates", subtitle: "KRA templates with weightings" },
+  },
+  {
+    path: "/config/kras", name: "CfgKRA",
+    component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "KRA", title: "KRAs", subtitle: "Key result areas for appraisals" },
+  },
+  // Single-doctype settings
+  {
+    path: "/config/hr-settings", name: "CfgHRSettings",
+    component: () => import("@/pages/ConfigSingle.vue"),
+    props: { doctype: "HR Settings", title: "HR Settings", subtitle: "Leave, attendance and employee defaults" },
+  },
+  {
+    path: "/config/payroll-settings", name: "CfgPayrollSettings",
+    component: () => import("@/pages/ConfigSingle.vue"),
+    props: { doctype: "Payroll Settings", title: "Payroll Settings", subtitle: "Payroll, salary slip and tax defaults" },
+  },
+  { path: "/config/access", name: "HrAccess", component: () => import("@/pages/HrAccess.vue") },
+  { path: "/setup", name: "SetupWizard", component: () => import("@/pages/SetupWizard.vue") },
+
+  // HR transactional screens via the generic engine
+  {
+    path: "/cases/grievances", name: "CfgGrievance", component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Employee Grievance", title: "Grievances", subtitle: "Employee grievances and resolutions" },
+  },
+  {
+    path: "/cases/exit-interviews", name: "CfgExitInterview", component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Exit Interview", title: "Exit Interviews", subtitle: "Feedback captured during offboarding" },
+  },
+  {
+    path: "/cases/full-and-final", name: "CfgFnF", component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Full and Final Statement", title: "Full & Final", subtitle: "Final settlement on exit" },
+  },
+  {
+    path: "/cases/promotions", name: "CfgPromotion", component: () => import("@/pages/ConfigDoctype.vue"),
+    props: { doctype: "Employee Promotion", title: "Promotions", subtitle: "Employee promotions" },
+  },
 
   { path: "/screen/:id", name: "ComingSoon", component: () => import("@/pages/ComingSoon.vue") },
 ]

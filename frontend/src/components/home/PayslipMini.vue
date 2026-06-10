@@ -1,10 +1,13 @@
 <script setup>
+import { useRouter } from "vue-router"
 import { Button, Badge } from "frappe-ui"
 import Card from "@/components/ui/Card.vue"
 import Icon from "@/components/ui/Icon.vue"
 import { formatINR } from "@/utils/formatters"
+import { downloadPdf } from "@/utils/actions"
 
-defineProps({ payslip: { type: Object, default: null } })
+const props = defineProps({ payslip: { type: Object, default: null } })
+const router = useRouter()
 </script>
 
 <template>
@@ -27,10 +30,10 @@ defineProps({ payslip: { type: Object, default: null } })
         </div>
       </div>
       <div class="flex gap-2">
-        <Button class="flex-1" variant="outline" theme="gray" size="sm" label="View">
+        <Button class="flex-1" variant="outline" theme="gray" size="sm" label="View" @click="router.push('/payslips')">
           <template #prefix><Icon name="file" :size="15" /></template>
         </Button>
-        <Button class="flex-1" variant="outline" theme="gray" size="sm" label="Download">
+        <Button class="flex-1" variant="outline" theme="gray" size="sm" label="Download" @click="downloadPdf('Salary Slip', props.payslip.name)">
           <template #prefix><Icon name="download" :size="15" /></template>
         </Button>
       </div>

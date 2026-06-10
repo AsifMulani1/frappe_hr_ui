@@ -5,6 +5,7 @@ import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_team_leave", auto: true })
 const d = computed(() => r.data || {})
@@ -18,6 +19,7 @@ function isWeekend(day) {
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Team leave" :subtitle="`${d.month || ''} · plan coverage across your team`" />
+    <AsyncShell :resource="r" loading-text="Loading team leave…">
     <Card :pad="false" class="overflow-hidden">
       <div class="flex items-center justify-between border-b border-outline-gray-1 px-5 py-4">
         <CardHeader title="Leave calendar" sub="Approved leave this month" />
@@ -53,5 +55,6 @@ function isWeekend(day) {
         </div>
       </div>
     </Card>
+    </AsyncShell>
   </div>
 </template>

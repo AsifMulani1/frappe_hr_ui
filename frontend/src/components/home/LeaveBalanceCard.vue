@@ -1,4 +1,5 @@
 <script setup>
+import { useRouter } from "vue-router"
 import { Button } from "frappe-ui"
 import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
@@ -7,13 +8,14 @@ import Icon from "@/components/ui/Icon.vue"
 import { LEAVE_THEME } from "@/composables/useEmployeeHome"
 
 defineProps({ balances: { type: Array, default: () => [] } })
+const router = useRouter()
 </script>
 
 <template>
   <Card>
     <CardHeader title="Leave balance" sub="Current financial year">
       <template #action>
-        <Button variant="outline" theme="gray" size="sm" label="Apply">
+        <Button variant="outline" theme="gray" size="sm" label="Apply" @click="router.push('/leave')">
           <template #prefix><Icon name="plus" :size="15" /></template>
         </Button>
       </template>
@@ -27,7 +29,8 @@ defineProps({ balances: { type: Array, default: () => [] } })
         <div class="my-2 text-[12.5px] font-medium text-ink-gray-7">{{ l.type }}</div>
         <ProgressBar :value="l.used" :max="l.total || 1" :color="(LEAVE_THEME[l.color] || LEAVE_THEME.blue).bar" :height="5" />
         <div class="mt-1.5 text-[11px] text-ink-gray-5">
-          {{ l.used }} used<span v-if="l.pending"> · {{ l.pending }} pending</span>
+          <template v-if="l.used || l.pending">{{ l.used }} used<span v-if="l.pending"> · {{ l.pending }} pending</span></template>
+          <template v-else>Fully available</template>
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_org_chart", auto: true })
 const d = computed(() => r.data || {})
@@ -13,6 +14,7 @@ const d = computed(() => r.data || {})
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Org chart" subtitle="Your reporting structure" />
+    <AsyncShell :resource="r" loading-text="Loading org chart…">
     <Card class="overflow-x-auto !p-10">
       <div class="flex min-w-[760px] flex-col items-center">
         <Card v-if="d.manager" class="min-w-[190px] text-center !border-blue-100 !bg-blue-50 !px-4 !py-3">
@@ -34,5 +36,6 @@ const d = computed(() => r.data || {})
         </div>
       </div>
     </Card>
+    </AsyncShell>
   </div>
 </template>

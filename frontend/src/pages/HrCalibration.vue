@@ -3,6 +3,7 @@ import { computed } from "vue"
 import { createResource } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_calibration", auto: true })
 const boxes = computed(() => r.data?.boxes || [])
@@ -18,6 +19,7 @@ function color(b) {
 <template>
   <div class="mx-auto max-w-[1100px] px-6 py-[22px]">
     <PageHeader title="Calibration — 9-box grid" :subtitle="`${r.data?.total ?? 0} employees plotted by performance & potential`" />
+    <AsyncShell :resource="r" loading-text="Loading calibration…">
     <Card>
       <div class="flex gap-3.5">
         <div class="flex items-center pb-7 pr-1"><span class="text-[11.5px] font-medium text-ink-gray-5" style="writing-mode: vertical-rl; transform: rotate(180deg)">Performance →</span></div>
@@ -32,5 +34,6 @@ function color(b) {
         </div>
       </div>
     </Card>
+    </AsyncShell>
   </div>
 </template>

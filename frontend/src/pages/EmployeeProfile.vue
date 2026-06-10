@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from "vue"
-import { Badge, Button, createResource } from "frappe-ui"
+import { ref, reactive, computed } from "vue"
+import { Badge, Button, FormControl, createResource, toast } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
 import Card from "@/components/ui/Card.vue"
@@ -8,6 +8,7 @@ import CardHeader from "@/components/ui/CardHeader.vue"
 import SectionLabel from "@/components/ui/SectionLabel.vue"
 import Tabs from "@/components/ui/Tabs.vue"
 import Field from "@/components/ui/Field.vue"
+import Drawer from "@/components/ui/Drawer.vue"
 import Icon from "@/components/ui/Icon.vue"
 
 const profile = createResource({
@@ -18,6 +19,72 @@ const profile = createResource({
 
 const e = computed(() => profile.data?.employee || {})
 const tab = ref("personal")
+
+// --- Edit my details (in-app, self-service) ---
+// HR owns name/DOB/DOJ/IDs/job/pay; the employee maintains everything below.
+const editOpen = ref(false)
+const SELF_FIELDS = [
+  "gender", "blood_group", "marital_status",
+  "personal_email", "cell_number", "current_address", "permanent_address",
+  "person_to_be_contacted", "relation", "emergency_phone_number",
+  "bank_name", "bank_ac_no", "ifsc_code", "pan_number",
+]
+const GENDER_OPTS = ["Male", "Female", "Other", "Prefer not to say"]
+const BLOOD_OPTS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+const MARITAL_OPTS = ["Single", "Married", "Divorced", "Widowed"]
+const form = reactive(Object.fromEntries(SELF_FIELDS.map((f) => [f, ""])))
+function openEdit() {
+  SELF_FIELDS.forEach((f) => { form[f] = e.value[f] || "" })
+  editOpen.value = true
+}
+const save = createResource({
+  url: "frappe_hr_ui.api.update_my_profile",
+  onSuccess() {
+    toast.success("Profile updated")
+    editOpen.value = false
+    profile.reload()
+  },
+  onError(err) { toast.error(err?.messages?.[0] || "Couldn't update profile") },
+})
+function saveProfile() {
+  if (form.personal_email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.personal_email)) {
+    toast.error("Enter a valid personal email")
+    return
+  }
+  save.submit({ values: JSON.stringify({ ...form }) })
+}
+
+// --- Document upload (attaches a file to the Employee record) ---
+const fileInput = ref(null)
+const uploading = ref(false)
+function triggerUpload() {
+  fileInput.value?.click()
+}
+async function onFileChange(ev) {
+  const file = ev.target.files?.[0]
+  if (!file) return
+  uploading.value = true
+  try {
+    const body = new FormData()
+    body.append("file", file, file.name)
+    body.append("is_private", "1")
+    body.append("doctype", "Employee")
+    body.append("docname", e.value.name)
+    const res = await fetch("/api/method/upload_file", {
+      method: "POST",
+      headers: { "X-Frappe-CSRF-Token": window.csrf_token },
+      body,
+    })
+    if (!res.ok) throw new Error("Upload failed")
+    toast.success("Document uploaded")
+    profile.reload()
+  } catch (err) {
+    toast.error("Couldn't upload document")
+  } finally {
+    uploading.value = false
+    ev.target.value = ""
+  }
+}
 
 function maskAcct(n) {
   if (!n) return "—"
@@ -50,6 +117,12 @@ const grid = "grid grid-cols-3 gap-x-7 gap-y-[18px]"
 
     <div v-if="profile.loading && !profile.data" class="py-20 text-center text-[13px] text-ink-gray-5">
       Loading profile…
+    </div>
+
+    <div v-else-if="profile.error" class="flex flex-col items-center gap-2 py-20 text-center">
+      <div class="text-[15px] font-medium text-ink-gray-8">Couldn't load your profile</div>
+      <div class="max-w-md text-[13px] text-ink-gray-5">{{ profile.error.messages?.[0] || "Please try again." }}</div>
+      <Button class="mt-2" variant="subtle" theme="gray" label="Retry" @click="profile.reload()" />
     </div>
 
     <div v-else-if="!e.name" class="py-20 text-center text-[13px] text-ink-gray-5">
@@ -86,10 +159,10 @@ const grid = "grid grid-cols-3 gap-x-7 gap-y-[18px]"
               </div>
             </div>
             <div class="flex gap-2 pb-0.5">
-              <Button variant="outline" theme="gray" label="Edit details">
+              <Button variant="outline" theme="gray" label="Edit details" @click="openEdit">
                 <template #prefix><Icon name="edit" :size="15" /></template>
               </Button>
-              <Button variant="outline" theme="gray" label="Documents">
+              <Button variant="outline" theme="gray" label="Documents" @click="tab = 'documents'">
                 <template #prefix><Icon name="download" :size="15" /></template>
               </Button>
             </div>
@@ -166,7 +239,7 @@ const grid = "grid grid-cols-3 gap-x-7 gap-y-[18px]"
             <div v-else>
               <SectionLabel label="Documents">
                 <template #action>
-                  <Button variant="outline" theme="gray" size="sm" label="Upload">
+                  <Button variant="outline" theme="gray" size="sm" label="Upload" :loading="uploading" @click="triggerUpload">
                     <template #prefix><Icon name="plus" :size="15" /></template>
                   </Button>
                 </template>
@@ -248,5 +321,61 @@ const grid = "grid grid-cols-3 gap-x-7 gap-y-[18px]"
         </Card>
       </div>
     </div>
+
+    <!-- hidden uploader -->
+    <input ref="fileInput" type="file" class="hidden" @change="onFileChange" />
+
+    <Drawer :open="editOpen" title="Edit my details" subtitle="Maintain your personal information — HR manages name, ID and job details" :width="520" @close="editOpen = false">
+      <div class="flex flex-col gap-6">
+        <!-- Personal -->
+        <div class="flex flex-col gap-4">
+          <SectionLabel label="Personal" />
+          <div class="grid grid-cols-2 gap-3">
+            <FormControl type="select" label="Gender" :options="GENDER_OPTS" v-model="form.gender" />
+            <FormControl type="select" label="Blood group" :options="BLOOD_OPTS" v-model="form.blood_group" />
+          </div>
+          <FormControl type="select" label="Marital status" :options="MARITAL_OPTS" v-model="form.marital_status" />
+        </div>
+
+        <!-- Contact -->
+        <div class="flex flex-col gap-4">
+          <SectionLabel label="Contact" />
+          <div class="grid grid-cols-2 gap-3">
+            <FormControl type="email" label="Personal email" v-model="form.personal_email" />
+            <FormControl type="text" label="Mobile" v-model="form.cell_number" />
+          </div>
+          <FormControl type="textarea" label="Current address" v-model="form.current_address" />
+          <FormControl type="textarea" label="Permanent address" v-model="form.permanent_address" />
+        </div>
+
+        <!-- Emergency contact -->
+        <div class="flex flex-col gap-4">
+          <SectionLabel label="Emergency contact" />
+          <div class="grid grid-cols-2 gap-3">
+            <FormControl type="text" label="Name" v-model="form.person_to_be_contacted" />
+            <FormControl type="text" label="Relation" v-model="form.relation" />
+          </div>
+          <FormControl type="text" label="Phone" v-model="form.emergency_phone_number" />
+        </div>
+
+        <!-- Bank & statutory -->
+        <div class="flex flex-col gap-4">
+          <SectionLabel label="Bank & statutory" />
+          <div class="grid grid-cols-2 gap-3">
+            <FormControl type="text" label="Bank name" v-model="form.bank_name" />
+            <FormControl type="text" label="Account number" v-model="form.bank_ac_no" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <FormControl type="text" label="IFSC code" v-model="form.ifsc_code" />
+            <FormControl type="text" label="PAN" v-model="form.pan_number" />
+          </div>
+          <p class="text-[11.5px] text-ink-gray-4">Bank details are verified by HR/Finance before the next payout.</p>
+        </div>
+      </div>
+      <template #footer>
+        <Button variant="ghost" label="Cancel" @click="editOpen = false" />
+        <Button variant="solid" theme="blue" label="Save changes" :loading="save.loading" @click="saveProfile" />
+      </template>
+    </Drawer>
   </div>
 </template>

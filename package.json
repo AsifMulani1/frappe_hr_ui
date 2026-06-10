@@ -1,0 +1,11 @@
+{
+  "name": "frappe_hr_ui",
+  "version": "0.1.0",
+  "description": "Modern, no-Desk front-end for Frappe HR",
+  "license": "mit",
+  "scripts": {
+    "postinstall": "cd frontend && yarn install --check-files",
+    "dev": "cd frontend && yarn dev",
+    "build": "cd frontend && yarn build"
+  }
+}

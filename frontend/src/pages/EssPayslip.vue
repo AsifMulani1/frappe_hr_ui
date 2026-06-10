@@ -6,7 +6,9 @@ import Card from "@/components/ui/Card.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import AmountRow from "@/components/ui/AmountRow.vue"
 import Icon from "@/components/ui/Icon.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 import { formatINR } from "@/utils/formatters"
+import { downloadPdf } from "@/utils/actions"
 
 const list = createResource({ url: "frappe_hr_ui.api.get_payslips", auto: true })
 const sel = ref(null)
@@ -22,11 +24,12 @@ const det = computed(() => detail.data || {})
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Payslips" subtitle="View and download your monthly salary slips">
       <template #actions>
-        <Button variant="solid" theme="gray" label="Download PDF"><template #prefix><Icon name="download" :size="15" /></template></Button>
+        <Button variant="solid" theme="blue" label="Download PDF" :disabled="!sel" @click="downloadPdf('Salary Slip', sel)"><template #prefix><Icon name="download" :size="15" /></template></Button>
       </template>
     </PageHeader>
 
-    <div v-if="!slips.length && !list.loading" class="py-16 text-center text-[13px] text-ink-gray-5">No payslips yet.</div>
+    <AsyncShell :resource="list" :has-employee="!!list.data?.employee" loading-text="Loading payslips…">
+    <div v-if="!slips.length" class="py-16 text-center text-[13px] text-ink-gray-5">No payslips yet.</div>
 
     <div v-else class="grid items-start gap-5" style="grid-template-columns: 260px minmax(0,1fr)">
       <Card :pad="false" class="p-2">
@@ -48,13 +51,13 @@ const det = computed(() => detail.data || {})
         <div v-if="det.name">
           <div class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-gray-1 px-6 py-5">
             <div class="flex items-center gap-3">
-              <div class="flex h-[38px] w-[38px] items-center justify-center rounded-md bg-blue-600 text-[17px] font-medium text-white">F</div>
+              <div class="flex h-[38px] w-[38px] items-center justify-center rounded-md bg-blue-600 text-[17px] font-medium text-white">{{ (det.company || 'C').charAt(0) }}</div>
               <div>
-                <div class="text-[15px] font-medium text-ink-gray-9">Frappe Technologies Pvt. Ltd.</div>
+                <div class="text-[15px] font-medium text-ink-gray-9">{{ det.company }}</div>
                 <div class="text-[12.5px] text-ink-gray-5">Payslip for {{ det.month }}</div>
               </div>
             </div>
-            <StatusBadge tone="success" dot :label="`${det.status} · ${det.posting_date}`" />
+            <StatusBadge :tone="det.status === 'Paid' ? 'success' : 'warning'" dot :label="`${det.status} · ${det.posting_date}`" />
           </div>
 
           <div class="grid grid-cols-4 gap-4 border-b border-outline-gray-1 bg-surface-gray-1 px-6 py-4">
@@ -67,13 +70,13 @@ const det = computed(() => detail.data || {})
           <div class="grid px-6 pb-5 pt-2" style="grid-template-columns: 1fr 1px 1fr">
             <div class="pr-6">
               <div class="py-3.5 text-[12.5px] font-medium uppercase tracking-[.03em] text-ink-gray-5">Earnings</div>
-              <AmountRow v-for="e in det.earnings" :key="e.label" :label="e.label" :value="formatINR(e.amount)" />
+              <AmountRow v-for="e in det.earnings || []" :key="e.label" :label="e.label" :value="formatINR(e.amount)" />
               <AmountRow label="Gross earnings" :value="formatINR(det.gross)" bold :border="false" />
             </div>
             <div class="bg-outline-gray-1" />
             <div class="pl-6">
               <div class="py-3.5 text-[12.5px] font-medium uppercase tracking-[.03em] text-ink-gray-5">Deductions</div>
-              <AmountRow v-for="e in det.deductions" :key="e.label" :label="e.label" :value="formatINR(e.amount)" color="text-red-600" />
+              <AmountRow v-for="e in det.deductions || []" :key="e.label" :label="e.label" :value="formatINR(e.amount)" color="text-red-600" />
               <AmountRow label="Total deductions" :value="formatINR(det.total_deduction)" bold :border="false" color="text-red-600" />
             </div>
           </div>
@@ -89,5 +92,6 @@ const det = computed(() => detail.data || {})
         <div v-else class="p-10 text-center text-[13px] text-ink-gray-5">Select a payslip.</div>
       </Card>
     </div>
+    </AsyncShell>
   </div>
 </template>

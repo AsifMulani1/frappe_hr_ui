@@ -1,17 +1,19 @@
 <script setup>
+import { useRouter } from "vue-router"
 import { Button } from "frappe-ui"
 import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
 import Icon from "@/components/ui/Icon.vue"
 
 defineProps({ announcements: { type: Array, default: () => [] } })
+const router = useRouter()
 </script>
 
 <template>
   <Card>
     <CardHeader title="Announcements" icon="megaphone">
       <template #action>
-        <Button variant="ghost" size="sm" label="All">
+        <Button variant="ghost" size="sm" label="All" @click="router.push('/announcements')">
           <template #suffix><Icon name="arrowRight" :size="15" /></template>
         </Button>
       </template>

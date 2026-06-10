@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from "vue"
+import { Checkbox } from "frappe-ui"
 import Icon from "./Icon.vue"
 import EmptyState from "./EmptyState.vue"
 
@@ -63,7 +64,7 @@ function toggleAll() {
         <thead>
           <tr class="bg-surface-gray-1">
             <th v-if="selectable" class="w-10 border-b border-outline-gray-1 pl-3.5">
-              <input type="checkbox" :checked="allChecked" class="h-[15px] w-[15px] accent-blue-600" @change="toggleAll" />
+              <Checkbox :model-value="allChecked" @update:model-value="toggleAll" />
             </th>
             <th
               v-for="c in columns"
@@ -85,11 +86,11 @@ function toggleAll() {
             v-for="(r, i) in sorted"
             :key="keyOf(r, i)"
             class="transition-colors hover:bg-surface-gray-1"
-            :class="$attrs.onRowClick || emit ? 'cursor-pointer' : ''"
+            :class="$attrs.onRowClick ? 'cursor-pointer' : ''"
             @click="emit('row-click', r)"
           >
             <td v-if="selectable" class="border-b border-outline-gray-1 pl-3.5" :class="i === sorted.length - 1 ? '!border-b-0' : ''" @click.stop>
-              <input type="checkbox" :checked="!!sel[keyOf(r, i)]" class="h-[15px] w-[15px] accent-blue-600" @change="sel[keyOf(r, i)] = !sel[keyOf(r, i)]" />
+              <Checkbox :model-value="!!sel[keyOf(r, i)]" @update:model-value="sel[keyOf(r, i)] = $event" />
             </td>
             <td
               v-for="c in columns"

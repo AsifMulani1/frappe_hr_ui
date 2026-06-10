@@ -1,9 +1,10 @@
 <script setup>
-import { ref, reactive, computed } from "vue"
+import { ref, reactive, computed, watch } from "vue"
 import { Button, FormControl, createResource, toast } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
+import DateField from "@/components/ui/DateField.vue"
 import Tabs from "@/components/ui/Tabs.vue"
 import DataTable from "@/components/ui/DataTable.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
@@ -11,6 +12,7 @@ import ProgressBar from "@/components/ui/ProgressBar.vue"
 import Drawer from "@/components/ui/Drawer.vue"
 import Icon from "@/components/ui/Icon.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 import { LEAVE_THEME } from "@/composables/useEmployeeHome"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_employee_leave", auto: true })
@@ -23,6 +25,13 @@ const typeOptions = computed(() =>
   (leaveTypes.data?.types || []).map((t) => ({ label: t.balance != null ? `${t.label} (${t.balance} left)` : t.label, value: t.value }))
 )
 const form = reactive({ leave_type: "", from_date: "", to_date: "", reason: "" })
+
+// live days + balance preview, computed by hrms
+const preview = createResource({ url: "frappe_hr_ui.api.get_leave_days" })
+watch(() => [form.leave_type, form.from_date, form.to_date], ([lt, f, t]) => {
+  if (lt && f && t && t >= f) preview.fetch({ leave_type: lt, from_date: f, to_date: t })
+})
+
 const apply = createResource({
   url: "frappe_hr_ui.api.apply_leave",
   onSuccess() {
@@ -40,7 +49,11 @@ function submitLeave() {
     toast.error("Pick a leave type and dates")
     return
   }
-  apply.submit({ ...form, to_date: form.to_date || form.from_date })
+  if (form.to_date < form.from_date) {
+    toast.error("The end date can't be before the start date")
+    return
+  }
+  apply.submit({ ...form })
 }
 
 const TYPE_TONE = { "Casual Leave": "info", "Sick Leave": "success", "Earned Leave": "accent", "Comp Off": "warning" }
@@ -62,17 +75,18 @@ const columns = [
   { key: "applied", label: "Applied" },
   { key: "status", label: "Status" },
 ]
-const totalLeft = computed(() => (d.value.balance || []).reduce((s, b) => s + (b.balance || 0), 0))
+const totalLeft = computed(() => (d.value.balance || []).reduce((s, b) => s + (Number(b.balance) || 0), 0))
 </script>
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Leave" subtitle="Apply for time off and track your requests">
       <template #actions>
-        <Button variant="solid" theme="gray" label="Apply for leave" @click="open = true"><template #prefix><Icon name="plus" :size="15" /></template></Button>
+        <Button variant="solid" theme="blue" label="Apply for leave" @click="open = true"><template #prefix><Icon name="plus" :size="15" /></template></Button>
       </template>
     </PageHeader>
 
+    <AsyncShell :resource="r" :has-employee="!!d.employee" loading-text="Loading your leave…">
     <div class="grid items-start gap-5" style="grid-template-columns: minmax(0,1fr) 340px">
       <Card :pad="false">
         <div class="px-5"><Tabs :tabs="tabs" v-model:active="tab" /></div>
@@ -118,19 +132,24 @@ const totalLeft = computed(() => (d.value.balance || []).reduce((s, b) => s + (b
         </Card>
       </div>
     </div>
+    </AsyncShell>
 
     <Drawer :open="open" title="Apply for leave" subtitle="Request time off — your manager will be notified" :width="480" @close="open = false">
       <div class="flex flex-col gap-4">
         <FormControl type="select" label="Leave type" :options="typeOptions" v-model="form.leave_type" />
         <div class="grid grid-cols-2 gap-3">
-          <FormControl type="date" label="From" v-model="form.from_date" />
-          <FormControl type="date" label="To" v-model="form.to_date" />
+          <DateField label="From" v-model="form.from_date" />
+          <DateField label="To" v-model="form.to_date" />
+        </div>
+        <div v-if="preview.data && form.leave_type && form.from_date" class="flex items-center justify-between rounded-md bg-surface-gray-2 px-3 py-2 text-[12.5px]">
+          <span class="text-ink-gray-7"><span class="font-medium text-ink-gray-9 tnum">{{ preview.data.days }}</span> day(s) requested</span>
+          <span v-if="preview.data.balance != null" class="text-ink-gray-7"><span class="font-medium text-ink-gray-9 tnum">{{ preview.data.balance }}</span> available</span>
         </div>
         <FormControl type="textarea" label="Reason" placeholder="Add a reason (optional)…" v-model="form.reason" />
       </div>
       <template #footer>
         <Button variant="ghost" label="Cancel" @click="open = false" />
-        <Button variant="solid" theme="gray" label="Submit request" :loading="apply.loading" @click="submitLeave" />
+        <Button variant="solid" theme="blue" label="Submit request" :loading="apply.loading" @click="submitLeave" />
       </template>
     </Drawer>
   </div>

@@ -3,13 +3,17 @@ import { ref, computed } from "vue"
 import { useRouter, useRoute } from "vue-router"
 import { Dropdown } from "frappe-ui"
 import Icon from "@/components/ui/Icon.vue"
+import BrandLogo from "@/components/ui/BrandLogo.vue"
 import { useUiStore } from "@/stores/ui"
+import { ADMIN_ROLES } from "@/data/nav"
 
 const ui = useUiStore()
 const router = useRouter()
 const route = useRoute()
 
 const collapsed = computed(() => ui.sidebarCollapsed)
+const showSettings = computed(() => ADMIN_ROLES.includes(ui.activeRole))
+const settingsActive = computed(() => String(route.name || "").startsWith("Settings") || String(route.path || "").startsWith("/settings") || String(route.path || "").startsWith("/config"))
 const cfg = computed(() => ui.nav)
 const currentRole = computed(() => ui.availableRoles.find((r) => r.id === ui.activeRole) || ui.availableRoles[0])
 
@@ -28,6 +32,7 @@ function navItems(c) {
 function go(item) {
   if (item.route) router.push({ name: item.route })
   else router.push(`/screen/${item.id}`)
+  ui.closeMobileNav()
 }
 
 function isActive(item) {
@@ -37,8 +42,11 @@ function isActive(item) {
 
 <template>
   <aside
-    class="flex h-full flex-col border-r border-outline-gray-1 bg-surface-menu-bar transition-all"
-    :class="collapsed ? 'w-[60px]' : 'w-[232px]'"
+    class="fixed inset-y-0 left-0 z-[70] flex h-full w-[232px] flex-col border-r border-outline-gray-1 bg-surface-menu-bar transition-transform lg:static lg:z-auto lg:translate-x-0 lg:transition-all"
+    :class="[
+      collapsed ? 'lg:w-[60px]' : 'lg:w-[232px]',
+      ui.mobileNavOpen ? 'translate-x-0' : '-translate-x-full',
+    ]"
   >
     <!-- Workspace switcher -->
     <div class="px-2.5 pb-1.5 pt-2.5">
@@ -47,10 +55,7 @@ function isActive(item) {
           class="flex h-10 w-full items-center gap-2.5 rounded-md px-2 hover:bg-surface-gray-2"
           :class="collapsed ? 'justify-center' : ''"
         >
-          <span
-            class="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[7px] bg-gray-900 text-[13px] font-semibold text-white"
-            >F</span
-          >
+          <BrandLogo :size="26" class="shrink-0" />
           <span v-if="!collapsed" class="min-w-0 flex-1 text-left leading-tight">
             <span class="block truncate text-[13px] font-medium text-ink-gray-9">Frappe HR</span>
             <span class="block truncate text-[11px] text-ink-gray-5">{{ currentRole?.label }}</span>
@@ -62,16 +67,27 @@ function isActive(item) {
 
     <!-- Search -->
     <div v-if="!collapsed" class="px-2.5 pb-2">
-      <div
-        class="flex h-[30px] items-center gap-1.5 rounded-md bg-surface-gray-2 px-2 text-ink-gray-5"
+      <button
+        class="flex h-[30px] w-full items-center gap-1.5 rounded-md bg-surface-gray-2 px-2 text-ink-gray-5 hover:bg-surface-gray-3"
+        @click="ui.openSearch()"
       >
         <Icon name="search" :size="14" />
-        <span class="flex-1 text-[13px]">Search</span>
+        <span class="flex-1 text-left text-[13px]">Search</span>
         <kbd
           class="rounded border border-outline-gray-1 bg-surface-white px-1 font-mono text-[11px] text-ink-gray-5"
           >⌘K</kbd
         >
-      </div>
+      </button>
+    </div>
+    <!-- collapsed: search icon -->
+    <div v-else class="px-2.5 pb-2">
+      <button
+        class="flex h-[30px] w-full items-center justify-center rounded-md bg-surface-gray-2 text-ink-gray-5 hover:bg-surface-gray-3"
+        title="Search (⌘K)"
+        @click="ui.openSearch()"
+      >
+        <Icon name="search" :size="15" />
+      </button>
     </div>
 
     <!-- Nav -->
@@ -132,10 +148,25 @@ function isActive(item) {
       </template>
     </nav>
 
-    <!-- Collapse toggle -->
+    <!-- Settings (admin workspaces only) + Collapse toggle -->
     <div class="border-t border-outline-gray-1 p-3">
       <button
-        class="flex h-[34px] w-full items-center gap-2.5 rounded-md border-none bg-transparent text-ink-gray-5 hover:bg-surface-gray-2"
+        v-if="showSettings"
+        :title="collapsed ? 'Settings' : undefined"
+        class="mb-0.5 flex h-9 w-full items-center gap-2.5 rounded-md border-none text-[13px] transition-colors"
+        :class="[
+          collapsed ? 'justify-center px-0' : 'px-2.5',
+          settingsActive
+            ? 'bg-surface-gray-3 font-medium text-ink-gray-9'
+            : 'font-normal text-ink-gray-7 hover:bg-surface-gray-2',
+        ]"
+        @click="router.push({ name: 'Settings' }); ui.closeMobileNav()"
+      >
+        <Icon name="settings" :size="16" :class="settingsActive ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
+        <span v-if="!collapsed" class="flex-1 text-left">Settings</span>
+      </button>
+      <button
+        class="hidden h-[34px] w-full items-center gap-2.5 rounded-md border-none bg-transparent text-ink-gray-5 hover:bg-surface-gray-2 lg:flex"
         :class="collapsed ? 'justify-center px-0' : 'px-2.5'"
         @click="ui.toggleSidebar()"
       >

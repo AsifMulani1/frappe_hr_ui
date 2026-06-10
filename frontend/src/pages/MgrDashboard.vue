@@ -9,6 +9,7 @@ import CardHeader from "@/components/ui/CardHeader.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import Icon from "@/components/ui/Icon.vue"
 import InitialsAvatar from "@/components/ui/InitialsAvatar.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const router = useRouter()
 const r = createResource({ url: "frappe_hr_ui.api.get_team_overview", auto: true })
@@ -29,9 +30,10 @@ const tiles = computed(() => {
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Team dashboard" :subtitle="`${(d.team || []).length} reports · ${d.manager?.employee_name || ''}`">
       <template #actions>
-        <Button variant="solid" theme="gray" :label="`${d.summary?.approvals ?? 0} approvals`" @click="router.push({ name: 'MgrApprovals' })"><template #prefix><Icon name="inbox" :size="15" /></template></Button>
+        <Button variant="solid" theme="blue" :label="`${d.summary?.approvals ?? 0} approvals`" @click="router.push({ name: 'MgrApprovals' })"><template #prefix><Icon name="inbox" :size="15" /></template></Button>
       </template>
     </PageHeader>
+    <AsyncShell :resource="r" loading-text="Loading team…">
     <StatTiles :items="tiles" :cols="4" />
     <div class="grid items-start gap-5" style="grid-template-columns: minmax(0,1fr) 340px">
       <div class="flex flex-col gap-5">
@@ -78,5 +80,6 @@ const tiles = computed(() => {
         </Card>
       </div>
     </div>
+    </AsyncShell>
   </div>
 </template>

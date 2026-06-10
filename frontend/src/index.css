@@ -1,4 +1,4 @@
-@import "frappe-ui/src/style.css";
+@import "frappe-ui/style.css";
 
 @tailwind base;
 @tailwind components;
@@ -35,4 +35,62 @@ body {
 }
 *::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* ---- Brand accent: Frappe HR logo green (#06B58B) ----
+   Tailwind `blue-*` utilities are remapped to teal in tailwind.config.js.
+   These override frappe-ui's semantic "blue" CSS-variable tokens (space-RGB)
+   so focus rings, links and accent surfaces also match the brand. */
+:root {
+  --outline-blue-1: 84 214 178;
+  --outline-blue-2: 6 181 139;
+  --surface-blue-1: 194 241 228;
+  --surface-blue-2: 6 181 139;
+  --text-ink-blue-1: 194 241 228;
+  --text-ink-blue-2: 31 193 152;
+  --text-ink-blue-3: 5 147 119;
+  --text-ink-blue-4: 12 87 71;
+}
+
+/* ---- Neutralise @tailwindcss/forms brand-teal focus on bare controls ----
+   The frappe-ui preset loads @tailwindcss/forms in *base* strategy, so it
+   styles every native <input>/<select>/<textarea> element directly. With our
+   blue→teal remap its focus ring + border resolve to brand teal (#059377),
+   which bleeds a green halo onto frappe-ui's own components (they render bare
+   <select>/<input>). We swap that single focus colour to the espresso neutral
+   gray here, at the same (base) layer but later in source order, so it wins.
+   Espresso components still override with their own focus:ring-0 / focus-visible
+   utilities (higher specificity), so their behaviour is unchanged. */
+@layer base {
+  [type="text"]:focus,
+  [type="email"]:focus,
+  [type="url"]:focus,
+  [type="password"]:focus,
+  [type="number"]:focus,
+  [type="date"]:focus,
+  [type="datetime-local"]:focus,
+  [type="month"]:focus,
+  [type="search"]:focus,
+  [type="tel"]:focus,
+  [type="time"]:focus,
+  [type="week"]:focus,
+  [multiple]:focus,
+  textarea:focus,
+  select:focus {
+    --tw-ring-color: rgb(var(--outline-gray-3));
+    border-color: rgb(var(--outline-gray-3));
+  }
+}
+
+/* Solid primary buttons use the Frappe HR logo green (#06B58B). Hover/active
+   are darker steps of the same brand hue. Targets only frappe-ui solid buttons,
+   which render as <button class="… bg-blue-500 …">. */
+button.bg-blue-500 {
+  background-color: #06b58b;
+}
+button.bg-blue-500:hover {
+  background-color: #059377;
+}
+button.bg-blue-500:active {
+  background-color: #0a6e57;
 }

@@ -5,6 +5,9 @@ import router from "./router"
 
 import { Button, Badge, FormControl, setConfig, frappeRequest, resourcesPlugin } from "frappe-ui"
 
+// Note: frappe-ui v1's `toast` is vue-sonner based and already has native
+// .success()/.error()/.warning()/.info() — no patch needed (v0.1.x did not).
+
 import { session } from "@/data/session"
 import { userResource } from "@/data/user"
 import { employeeResource } from "@/data/employee"

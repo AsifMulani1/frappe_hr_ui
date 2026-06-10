@@ -7,7 +7,9 @@ import Card from "@/components/ui/Card.vue"
 import DataTable from "@/components/ui/DataTable.vue"
 import StatusBadge from "@/components/ui/StatusBadge.vue"
 import Icon from "@/components/ui/Icon.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 import { formatINR, formatINRShort } from "@/utils/formatters"
+import { downloadCSV } from "@/utils/actions"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_bankfile", auto: true })
 const d = computed(() => r.data || {})
@@ -27,8 +29,9 @@ const columns = [
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Bank disbursement" subtitle="Generate bank advice files for net salary">
-      <template #actions><Button variant="solid" theme="gray" :label="`Disburse ${formatINRShort(d.total || 0)}`"><template #prefix><Icon name="card" :size="15" /></template></Button></template>
+      <template #actions><Button variant="solid" theme="blue" :label="`Disburse ${formatINRShort(d.total || 0)}`" @click="downloadCSV('bank-disbursement', columns, d.banks)"><template #prefix><Icon name="card" :size="15" /></template></Button></template>
     </PageHeader>
+    <AsyncShell :resource="r" loading-text="Loading disbursement…">
     <StatTiles :items="tiles" :cols="4" />
     <Card class="!p-4">
       <DataTable :columns="columns" :rows="d.banks || []" row-key="bank" :loading="r.loading">
@@ -39,5 +42,6 @@ const columns = [
         <template #cell-st="{ row }"><StatusBadge :tone="row.tone" size="sm" dot :label="row.st" /></template>
       </DataTable>
     </Card>
+    </AsyncShell>
   </div>
 </template>

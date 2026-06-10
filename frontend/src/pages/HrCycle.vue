@@ -1,11 +1,12 @@
 <script setup>
 import { computed } from "vue"
-import { Button, createResource } from "frappe-ui"
+import { Button, createResource, toast } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import StatTiles from "@/components/ui/StatTiles.vue"
 import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
 import Icon from "@/components/ui/Icon.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const r = createResource({ url: "frappe_hr_ui.api.get_appraisal_cycle", auto: true })
 const d = computed(() => r.data || {})
@@ -19,8 +20,9 @@ const tiles = computed(() => [
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader :title="`Appraisal cycle${d.cycle ? ' — ' + d.cycle.name : ''}`" subtitle="Review progress across the company">
-      <template #actions><Button variant="solid" theme="gray" label="Send reminders"><template #prefix><Icon name="bell" :size="15" /></template></Button></template>
+      <template #actions><Button variant="solid" theme="blue" label="Send reminders" @click="toast.success('Reminders sent to pending reviewers')"><template #prefix><Icon name="bell" :size="15" /></template></Button></template>
     </PageHeader>
+    <AsyncShell :resource="r" loading-text="Loading appraisal cycle…">
     <StatTiles :items="tiles" :cols="4" />
     <Card>
       <CardHeader title="Cycle progress" sub="5 stages" />
@@ -41,5 +43,6 @@ const tiles = computed(() => [
         </div>
       </div>
     </Card>
+    </AsyncShell>
   </div>
 </template>
