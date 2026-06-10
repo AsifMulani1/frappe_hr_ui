@@ -226,6 +226,7 @@ export const SETTINGS = [
     roles: ["people", "payroll", "recruitment"],
     items: [
       { id: "cfg-setup", label: "Setup wizard", icon: "check", route: "SetupWizard", desc: "Guided first-run setup" },
+      { id: "cfg-statutory", label: "Statutory profile", icon: "shield", route: "StatutoryProfile", desc: "PF / ESI / PT / TAN registration numbers" },
       { id: "cfg-hr-settings", label: "HR settings", icon: "settings", route: "CfgHRSettings", desc: "Org-wide HR preferences" },
       { id: "cfg-access", label: "Users & access", icon: "users", route: "HrAccess", desc: "Invite users and assign roles" },
     ],

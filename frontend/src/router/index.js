@@ -114,6 +114,7 @@ const routes = [
   { path: "/payroll", name: "PayrollDashboard", component: () => import("@/pages/PayrollDashboard.vue") },
   { path: "/recruitment", name: "RecruitmentDashboard", component: () => import("@/pages/RecruitmentDashboard.vue") },
   { path: "/settings", name: "Settings", component: () => import("@/pages/SettingsHub.vue") },
+  { path: "/settings/statutory", name: "StatutoryProfile", component: () => import("@/pages/StatutoryProfile.vue") },
   { path: "/settings/general", name: "HrSettings", component: () => import("@/pages/HrSettings.vue") },
 
   // Configuration (generic metadata-driven doctype admin — no Desk)

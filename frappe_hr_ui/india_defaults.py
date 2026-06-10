@@ -121,6 +121,31 @@ def ensure_statutory(log):
 	log["statutory"] = enabled or "already enabled"
 
 
+# Statutory registration numbers a company files returns under. Added to Company
+# so registers/challans can carry the real codes (not a placeholder).
+COMPANY_STATUTORY_FIELDS = [
+	{"fieldname": "stat_registration_section", "label": "Statutory Registration (India)",
+	 "fieldtype": "Section Break", "insert_after": "registration_details", "collapsible": 1},
+	{"fieldname": "pf_registration_number", "label": "PF Establishment Code", "fieldtype": "Data",
+	 "insert_after": "stat_registration_section"},
+	{"fieldname": "esic_registration_number", "label": "ESIC Employer Code", "fieldtype": "Data",
+	 "insert_after": "pf_registration_number"},
+	{"fieldname": "stat_col_break", "fieldtype": "Column Break", "insert_after": "esic_registration_number"},
+	{"fieldname": "pt_registration_number", "label": "Professional Tax Reg. No.", "fieldtype": "Data",
+	 "insert_after": "stat_col_break"},
+	{"fieldname": "tan_number", "label": "TAN (for TDS / 24Q)", "fieldtype": "Data",
+	 "insert_after": "pt_registration_number"},
+]
+
+
+def ensure_statutory_fields(log=None):
+	"""Idempotently add the statutory-registration fields to Company."""
+	from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+	create_custom_fields({"Company": COMPANY_STATUTORY_FIELDS}, ignore_validate=True)
+	if log is not None:
+		log["statutory_fields"] = "ready"
+
+
 def apply(company=None):
 	"""Idempotently apply the India defaults pack; returns a summary of what was created."""
 	company = _company(company)
@@ -132,6 +157,7 @@ def apply(company=None):
 	ensure_structure(company, log)
 	ensure_holiday_list(company, log)
 	ensure_statutory(log)
+	ensure_statutory_fields(log)
 	frappe.db.commit()
 	print(f"India defaults applied to {company}: {log}")
 	return log

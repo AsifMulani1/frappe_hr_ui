@@ -1600,9 +1600,15 @@ def get_compliance(kind):
 		join `tabSalary Detail` sd on sd.parent=ss.name
 		where ss.docstatus=1 and sd.parentfield='deductions' and sd.salary_component in %s and sd.amount>0""",
 		(tuple(comps),))[0][0]
+	# real registration number this authority identifies the company by (from Company)
+	company = COMPANY_NAME()
+	reg_field = {"pf": "pf_registration_number", "esi": "esic_registration_number",
+				 "pt": "pt_registration_number", "lwf": "pt_registration_number", "tds": "tan_number"}.get(kind)
+	cmeta = frappe.get_meta("Company")
+	establishment = frappe.db.get_value("Company", company, reg_field) if (reg_field and cmeta.get_field(reg_field)) else None
 	return {
 		"title": c["title"], "code": c["code"], "authority": c["authority"], "sub": c["sub"], "rate": c["rate"],
-		"amount": amount, "covered": covered,
+		"amount": amount, "covered": covered, "company": company, "establishment": establishment or None,
 		"stats": [
 			{"label": "Total contribution", "value": frappe.utils.fmt_money(amount, currency="INR"), "sub": "across slips", "icon": "rupee", "tone": "accent"},
 			{"label": "Employees covered", "value": covered, "sub": "with this deduction", "icon": "users", "tone": "neutral"},
@@ -1635,6 +1641,37 @@ def get_statcal():
 		{"date": "30", "mon": "Jun", "title": "June payroll disbursement", "tag": "Payroll", "tone": "accent"},
 	]
 	return {"events": events}
+
+
+_STATUTORY_FIELDS = ["pf_registration_number", "esic_registration_number", "pt_registration_number", "tan_number"]
+
+
+@frappe.whitelist()
+def get_company_statutory(company=None):
+	"""The company's statutory registration numbers (PF/ESI/PT/TAN) — for the
+	statutory-profile screen and to stamp on registers/challans."""
+	_require_hr()
+	from frappe_hr_ui import india_defaults
+	india_defaults.ensure_statutory_fields()  # idempotent — works even if setup wasn't run
+	company = company or COMPANY_NAME()
+	vals = frappe.db.get_value("Company", company, _STATUTORY_FIELDS + ["company_name", "tax_id"], as_dict=True) or {}
+	vals["company"] = company
+	return vals
+
+
+@frappe.whitelist(methods=["POST"])
+def save_company_statutory(values, company=None):
+	_require_hr()
+	if not frappe.has_permission("Company", "write"):
+		frappe.throw(frappe._("You are not permitted to edit company settings."), frappe.PermissionError)
+	company = company or COMPANY_NAME()
+	data = frappe.parse_json(values) or {}
+	cmeta = frappe.get_meta("Company")
+	for f in _STATUTORY_FIELDS:
+		if f in data and cmeta.get_field(f):
+			frappe.db.set_value("Company", company, f, (data.get(f) or "").strip())
+	frappe.db.commit()
+	return {"company": company}
 
 
 # ----------------------------------------------------------- recruitment

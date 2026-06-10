@@ -60,7 +60,7 @@ function quickLink(label) {
         <CardHeader title="Authority & rate" icon="shield" />
         <AmountRow label="Statutory body" :value="d.authority" />
         <AmountRow label="Code" :value="d.code" />
-        <AmountRow label="Establishment" value="MH/BAN/0042851" :border="false" />
+        <AmountRow label="Registration no." :value="d.establishment || 'Not set — add in Settings → Statutory profile'" :border="false" />
         <div class="mt-3 rounded-md border border-outline-gray-1 bg-surface-gray-1 p-3 text-[12.5px] leading-relaxed text-ink-gray-7">
           <b class="font-medium text-ink-gray-9">Rate:</b> {{ d.rate }}
         </div>
