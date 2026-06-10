@@ -93,6 +93,23 @@ def ensure_components(company, log):
 			log["components"].append(name)
 
 
+# Statutory deduction components india_payroll INJECTS at runtime. They must
+# exist first or its ESI/LWF hooks skip silently (they `return` when the
+# component is absent). NOT added to the structure — india_payroll appends them
+# to each slip itself. Professional Tax already comes via SALARY_COMPONENTS.
+STATUTORY_COMPONENTS = [("Employee State Insurance", "Deduction"), ("Labour Welfare Fund", "Deduction")]
+
+
+def ensure_statutory_components(company, log):
+	if "india_payroll" not in frappe.get_installed_apps():
+		return
+	for name, ctype in STATUTORY_COMPONENTS:
+		if not frappe.db.exists("Salary Component", name):
+			frappe.get_doc({"doctype": "Salary Component", "salary_component": name,
+							"type": ctype, "company": company}).insert(ignore_permissions=True)
+			log.setdefault("statutory_components", []).append(name)
+
+
 def ensure_leave_types(log):
 	for name, alloc, is_lwp, cf in LEAVE_TYPES:
 		if not frappe.db.exists("Leave Type", name):
@@ -103,36 +120,59 @@ def ensure_leave_types(log):
 
 
 def ensure_structure(company, log):
-	if frappe.db.exists("Salary Structure", STRUCTURE_NAME):
+	# Already a submitted structure for THIS company? (Salary Structure is
+	# company-scoped — checking by global name skips fresh companies.)
+	if frappe.db.exists("Salary Structure", {"company": company, "docstatus": 1}):
 		return
+	# Names are globally unique, so suffix with the company abbr if "Standard
+	# Salary Structure" is already taken by another company.
+	name = STRUCTURE_NAME
+	if frappe.db.exists("Salary Structure", name):
+		abbr = frappe.db.get_value("Company", company, "abbr") or ""
+		name = f"{STRUCTURE_NAME} - {abbr}".strip(" -")
 	currency = frappe.db.get_value("Company", company, "default_currency") or "INR"
 	earnings = [(n, f) for n, t, f in SALARY_COMPONENTS if t == "Earning"]
 	deductions = [(n, f) for n, t, f in SALARY_COMPONENTS if t == "Deduction"]
 	ss = frappe.get_doc({
-		"doctype": "Salary Structure", "name": STRUCTURE_NAME, "company": company,
+		"doctype": "Salary Structure", "name": name, "company": company,
 		"payroll_frequency": "Monthly", "currency": currency,
 		"earnings": [{"salary_component": n, "amount_based_on_formula": 1, "formula": f} for n, f in earnings],
 		"deductions": [{"salary_component": n, "amount_based_on_formula": 1, "formula": f} for n, f in deductions],
 	})
 	ss.insert(ignore_permissions=True)
 	ss.submit()
-	log["structure"] = STRUCTURE_NAME
+	log["structure"] = name
 
 
 def ensure_holiday_list(company, log):
 	year = getdate().year
 	name = f"India Holidays {year}"
-	if frappe.db.exists("Holiday List", name):
-		return name
-	hl = frappe.get_doc({
-		"doctype": "Holiday List", "holiday_list_name": name,
-		"from_date": f"{year}-01-01", "to_date": f"{year}-12-31",
-		"holidays": [{"holiday_date": f"{year}-{md}", "description": desc} for md, desc in NATIONAL_HOLIDAYS],
-	})
-	hl.insert(ignore_permissions=True)
-	log["holiday_list"] = name
+	if not frappe.db.exists("Holiday List", name):
+		hl = frappe.get_doc({
+			"doctype": "Holiday List", "holiday_list_name": name,
+			"from_date": f"{year}-01-01", "to_date": f"{year}-12-31", "weekly_off": "Sunday",
+			"holidays": [{"holiday_date": f"{year}-{md}", "description": desc} for md, desc in NATIONAL_HOLIDAYS],
+		})
+		hl.insert(ignore_permissions=True)
+		log["holiday_list"] = name
+	# hrms v16 resolves an employee/company's holidays via a SUBMITTED
+	# "Holiday List Assignment" — NOT Company.default_holiday_list. Without one,
+	# payroll throws "No Holiday List was found". Create a company-level assignment.
+	if not frappe.db.exists("Holiday List Assignment", {"assigned_to": company, "docstatus": 1}):
+		hla = frappe.get_doc({
+			"doctype": "Holiday List Assignment",
+			"applicable_for": "Company",
+			"assigned_to": company,
+			"holiday_list": name,
+			"from_date": f"{year}-01-01",
+		})
+		hla.insert(ignore_permissions=True)
+		hla.submit()
+		log["holiday_assignment"] = name
+	# keep the legacy field set too (harmless; some ERPNext flows read it)
 	if not frappe.db.get_value("Company", company, "default_holiday_list"):
 		frappe.db.set_value("Company", company, "default_holiday_list", name)
+		frappe.clear_document_cache("Company", company)
 	return name
 
 
@@ -184,6 +224,7 @@ def apply(company=None):
 		frappe.throw("No company found. Create a company first.")
 	log = {"company": company, "components": [], "leave_types": [], "structure": None, "holiday_list": None, "statutory": None}
 	ensure_components(company, log)
+	ensure_statutory_components(company, log)
 	ensure_leave_types(log)
 	ensure_structure(company, log)
 	ensure_holiday_list(company, log)
