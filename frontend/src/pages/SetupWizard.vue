@@ -178,14 +178,17 @@ watch(step, (n) => {
           <Button variant="solid" theme="blue" label="Create company & continue" :loading="createCompany.loading" @click="makeCompany" />
         </div>
       </template>
-      <!-- company exists → welcome -->
+      <!-- company exists → show it (identity card) -->
       <template v-else>
-        <div class="text-[15px] font-medium text-ink-gray-9">Welcome 👋</div>
-        <p class="mt-1 text-[13px] text-ink-gray-6">Five steps to a live payroll for <b>{{ s.company || "your company" }}</b> — apply India defaults, set your statutory numbers, import your team, assign pay, and run the first cycle.</p>
-        <div class="mt-4 grid grid-cols-3 gap-3">
-          <div class="rounded-md border border-outline-gray-1 p-3"><div class="tnum text-[20px] font-medium">{{ s.components ?? "—" }}</div><div class="text-[11.5px] text-ink-gray-5">salary components</div></div>
-          <div class="rounded-md border border-outline-gray-1 p-3"><div class="tnum text-[20px] font-medium">{{ s.leave_types ?? "—" }}</div><div class="text-[11.5px] text-ink-gray-5">leave types</div></div>
-          <div class="rounded-md border border-outline-gray-1 p-3"><div class="tnum text-[20px] font-medium">{{ s.employees ?? "—" }}</div><div class="text-[11.5px] text-ink-gray-5">employees</div></div>
+        <div class="text-[15px] font-medium text-ink-gray-9">Your company</div>
+        <p class="mt-1 text-[13px] text-ink-gray-6">Everything — people, payroll, compliance — belongs to this company. Confirm it and continue; the next five steps take you to your first payroll.</p>
+        <div class="mt-4 flex items-center gap-3 rounded-lg border border-outline-gray-1 p-4">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-surface-gray-2 text-[15px] font-semibold text-ink-gray-7">{{ s.abbr || (s.company || "?").slice(0, 2).toUpperCase() }}</div>
+          <div class="min-w-0 flex-1">
+            <div class="truncate text-[14px] font-medium text-ink-gray-9">{{ s.company || "—" }}</div>
+            <div class="mt-0.5 text-[12.5px] text-ink-gray-5">{{ s.country || "India" }} · {{ s.currency || "INR" }}</div>
+          </div>
+          <div class="shrink-0 text-right"><div class="tnum text-[20px] font-medium text-ink-gray-9">{{ s.employees ?? 0 }}</div><div class="text-[11px] text-ink-gray-5">employees</div></div>
         </div>
         <div class="mt-5 flex justify-end"><Button variant="solid" theme="blue" label="Get started" @click="step = 2" /></div>
       </template>

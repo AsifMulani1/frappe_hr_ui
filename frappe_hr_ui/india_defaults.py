@@ -246,9 +246,13 @@ def apply_defaults(company=None):
 def defaults_status(company=None):
 	"""What's already configured — drives the setup wizard's checklist."""
 	company = _company(company)
+	cdoc = frappe.db.get_value("Company", company, ["country", "default_currency", "abbr"], as_dict=True) if company else None
 	return {
 		"company": company,
 		"has_company": bool(company),
+		"country": cdoc.country if cdoc else None,
+		"currency": cdoc.default_currency if cdoc else None,
+		"abbr": cdoc.abbr if cdoc else None,
 		"has_components": bool(frappe.db.exists("Salary Component", {"name": ["in", [c[0] for c in SALARY_COMPONENTS]]})),
 		"components": frappe.db.count("Salary Component"),
 		"leave_types": frappe.db.count("Leave Type"),
