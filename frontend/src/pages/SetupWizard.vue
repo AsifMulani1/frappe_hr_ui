@@ -12,8 +12,8 @@ import Icon from "@/components/ui/Icon.vue"
 
 const router = useRouter()
 const route = useRoute()
-const STEPS = ["Company", "Defaults", "People", "Pay", "Run", "Done"]
-const STEP_QUERY = { defaults: 2, people: 3, employees: 3, pay: 4, run: 5 }
+const STEPS = ["Company", "Defaults", "People", "Pay", "Preview", "Done"]
+const STEP_QUERY = { company: 1, defaults: 2, people: 3, employees: 3, pay: 4, preview: 5, run: 5 }
 const step = ref(STEP_QUERY[route.query.step] || 1)
 
 const STATES = ["Andhra Pradesh", "Assam", "Bihar", "Chandigarh", "Chhattisgarh", "Delhi", "Goa", "Gujarat",
@@ -146,7 +146,7 @@ watch(step, (n) => {
 
 <template>
   <div class="mx-auto max-w-[860px] px-6 py-[22px]">
-    <PageHeader title="Set up your company" subtitle="Zero to first payroll — defaults, people, pay, run. No Desk needed." />
+    <PageHeader title="Set up your company" subtitle="Zero to payroll-ready — defaults, people, pay, preview. No Desk needed." />
 
     <!-- stepper -->
     <div class="mb-5 flex flex-wrap items-center gap-2">
@@ -285,24 +285,22 @@ watch(step, (n) => {
       </div>
     </Card>
 
-    <!-- 5: run payroll -->
+    <!-- 5: preview (non-destructive) -->
     <Card v-else-if="step === 5">
-      <div class="text-[15px] font-medium text-ink-gray-9">Run your first payroll</div>
-      <p class="mt-1 text-[13px] text-ink-gray-6">Generates and submits a salary slip for every employee — PT, ESI, LWF, PF and TDS computed automatically.</p>
+      <div class="text-[15px] font-medium text-ink-gray-9">Preview your first payroll</div>
+      <p class="mt-1 text-[13px] text-ink-gray-6">Check how many people are ready and confirm the month — PT, ESI, LWF, PF and TDS are computed automatically. <b>Nothing is created here</b>; the actual run lives in Payroll, where you do it each month.</p>
       <div class="mt-3 max-w-xs"><DateField label="Payroll month" v-model="period" placeholder="Pick any date in the month" /></div>
-      <div v-if="preview.data" class="mt-3 rounded-md border border-outline-gray-1 bg-surface-gray-1 p-3.5 text-[13px]">
+      <div v-if="preview.loading" class="mt-3 text-[12.5px] text-ink-gray-5">Checking…</div>
+      <div v-else-if="preview.data" class="mt-3 rounded-md border border-outline-gray-1 bg-surface-gray-1 p-3.5 text-[13px]">
         <span class="font-medium text-ink-gray-9">{{ preview.data.period }}</span> ·
-        <span class="font-medium text-ink-gray-9 tnum">{{ preview.data.pending }}</span> employee(s) to process
+        <span class="font-medium text-ink-gray-9 tnum">{{ preview.data.pending }}</span> employee(s) ready to process
         <span v-if="preview.data.eligible - preview.data.pending" class="text-ink-gray-5"> · {{ preview.data.eligible - preview.data.pending }} already run</span>
-      </div>
-      <div v-if="runRes.data" class="mt-3 rounded-md bg-surface-gray-1 p-3 text-[12.5px]">
-        <div class="font-medium text-ink-gray-9">{{ runRes.data.created }} slip(s) created · {{ runRes.data.skipped }} skipped</div>
-        <div v-for="(e, i) in runRes.data.errors" :key="i" class="mt-0.5 text-red-600">{{ e.employee }}: {{ e.error }}</div>
+        <div v-if="!preview.data.pending && !preview.data.eligible" class="mt-1 text-[12px] text-ink-gray-5">No one has compensation assigned yet — finish the Pay step first.</div>
       </div>
       <div class="mt-5 flex justify-between">
         <Button variant="ghost" label="Back" @click="step = 4" />
         <div class="flex gap-2">
-          <Button variant="subtle" theme="gray" :label="`Run payroll${preview.data?.pending ? ' (' + preview.data.pending + ')' : ''}`" :loading="runRes.loading" :disabled="!preview.data?.pending" @click="doRun" />
+          <Button variant="subtle" theme="gray" label="Run payroll in Payroll →" @click="router.push({ name: 'HrPayrun' })" />
           <Button variant="solid" theme="blue" label="Finish" @click="step = 6" />
         </div>
       </div>

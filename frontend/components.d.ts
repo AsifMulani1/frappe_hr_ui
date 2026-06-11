@@ -31,6 +31,7 @@ declare module 'vue' {
     Field: typeof import('./src/components/ui/Field.vue')['default']
     FilterChip: typeof import('./src/components/ui/FilterChip.vue')['default']
     FormDrawer: typeof import('./src/components/ui/FormDrawer.vue')['default']
+    GettingStarted: typeof import('./src/components/home/GettingStarted.vue')['default']
     HolidaysCard: typeof import('./src/components/home/HolidaysCard.vue')['default']
     Icon: typeof import('./src/components/ui/Icon.vue')['default']
     InitialsAvatar: typeof import('./src/components/ui/InitialsAvatar.vue')['default']

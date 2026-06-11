@@ -1,8 +1,10 @@
 <script setup>
-import { computed, inject } from "vue"
+import { computed, inject, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import { Button, createResource, toast } from "frappe-ui"
 import Icon from "@/components/ui/Icon.vue"
+import { userResource } from "@/data/user"
+import GettingStarted from "@/components/home/GettingStarted.vue"
 import CheckinHero from "@/components/home/CheckinHero.vue"
 import LeaveBalanceCard from "@/components/home/LeaveBalanceCard.vue"
 import QuickActions from "@/components/home/QuickActions.vue"
@@ -41,6 +43,12 @@ const headerToggle = createResource({
   onError: (e) => toast.error(e?.messages?.[0] || "Couldn't update your check-in. Please try again."),
 })
 const checkedIn = computed(() => d.value.today?.checked_in)
+
+// Admins drive setup; show them the getting-started checklist even before they
+// have an Employee record (a fresh-site owner has none).
+onMounted(() => { if (!userResource.data && !userResource.loading) userResource.fetch() })
+const isAdmin = computed(() =>
+  (userResource.data?.roles || []).some((r) => ["System Manager", "HR Manager", "HR User"].includes(r)))
 </script>
 
 <template>
@@ -59,18 +67,22 @@ const checkedIn = computed(() => d.value.today?.checked_in)
       <Button class="mt-2" variant="subtle" theme="gray" label="Retry" @click="home.reload()" />
     </div>
 
-    <!-- no employee linked -->
-    <div v-else-if="!emp" class="flex h-[60vh] flex-col items-center justify-center gap-2 text-center">
-      <Icon name="user" :size="26" class="text-ink-gray-4" />
-      <div class="text-[15px] font-medium text-ink-gray-8">No employee record linked</div>
-      <div class="max-w-md text-[13px] text-ink-gray-5">
-        This user isn't linked to an Employee. Sign in as an employee (e.g. aarav.mehta@frappe.io)
-        to see the self-service dashboard.
-      </div>
-    </div>
-
-    <!-- dashboard -->
+    <!-- admin onboarding + self-service dashboard -->
     <template v-else>
+      <GettingStarted v-if="isAdmin" class="mb-5" />
+
+      <!-- no employee linked (shown only to non-admins; admins get the checklist above) -->
+      <div v-if="!emp && !isAdmin" class="flex h-[60vh] flex-col items-center justify-center gap-2 text-center">
+        <Icon name="user" :size="26" class="text-ink-gray-4" />
+        <div class="text-[15px] font-medium text-ink-gray-8">No employee record linked</div>
+        <div class="max-w-md text-[13px] text-ink-gray-5">
+          This user isn't linked to an Employee. Sign in as an employee (e.g. aarav.mehta@frappe.io)
+          to see the self-service dashboard.
+        </div>
+      </div>
+
+      <!-- self-service dashboard -->
+      <template v-else-if="emp">
       <div class="mb-[18px] flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 class="text-[22px] font-medium tracking-tight text-ink-gray-9">
@@ -117,6 +129,7 @@ const checkedIn = computed(() => d.value.today?.checked_in)
           <CelebrationsCard :celebrations="d.celebrations || []" />
         </div>
       </div>
+      </template>
     </template>
   </div>
 </template>
