@@ -8,3 +8,12 @@ keep working unchanged. Domain modules are carved out of ``core`` incrementally.
 from .core import *  # noqa: F401, F403
 from .core import COMPANY_NAME, _require_hr  # noqa: F401  helpers other modules import
 from .reports import *  # noqa: F401, F403
+from .employee import *  # noqa: F401, F403
+from .team import *  # noqa: F401, F403
+from .hr import *  # noqa: F401, F403
+from .payroll import *  # noqa: F401, F403
+from .compliance import *  # noqa: F401, F403
+from .talent import *  # noqa: F401, F403
+from .actions import *  # noqa: F401, F403
+from .admin import *  # noqa: F401, F403
+from .home import *  # noqa: F401, F403
