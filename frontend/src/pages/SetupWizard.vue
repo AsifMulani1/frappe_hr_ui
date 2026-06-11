@@ -125,7 +125,15 @@ function monthBounds(d) {
   return { first, last: `${last.getFullYear()}-${pad(last.getMonth() + 1)}-${pad(last.getDate())}` }
 }
 const preview = createResource({ url: "frappe_hr_ui.api.preview_payroll" })
-watch(period, (p) => { if (p) preview.fetch({ start_date: monthBounds(p).first }) })
+const sample = createResource({ url: "frappe_hr_ui.api.preview_payslip" })
+watch(period, (p) => {
+  if (!p) return
+  const start = monthBounds(p).first
+  preview.fetch({ start_date: start })
+  sample.fetch({ start_date: start })
+})
+function pickSample(e) { if (period.value) sample.fetch({ start_date: monthBounds(period.value).first, employee: e }) }
+function inr(n) { return "₹" + Number(n || 0).toLocaleString("en-IN") }
 const runRes = createResource({
   url: "frappe_hr_ui.api.run_payroll",
   onSuccess(res) { res.errors?.length ? toast.warning(`${res.created} created, ${res.errors.length} failed`) : toast.success(`${res.created} slip(s) created`); status.reload() },
@@ -287,16 +295,49 @@ watch(step, (n) => {
 
     <!-- 5: preview (non-destructive) -->
     <Card v-else-if="step === 5">
-      <div class="text-[15px] font-medium text-ink-gray-9">Preview your first payroll</div>
-      <p class="mt-1 text-[13px] text-ink-gray-6">Check how many people are ready and confirm the month — PT, ESI, LWF, PF and TDS are computed automatically. <b>Nothing is created here</b>; the actual run lives in Payroll, where you do it each month.</p>
+      <div class="text-[15px] font-medium text-ink-gray-9">Preview your first payslip</div>
+      <p class="mt-1 text-[13px] text-ink-gray-6">See a real payslip — PT, ESI, LWF, PF and TDS computed exactly as a live run would. <b>Nothing is created or saved here</b>; the actual run lives in Payroll, where you do it each month.</p>
       <div class="mt-3 max-w-xs"><DateField label="Payroll month" v-model="period" placeholder="Pick any date in the month" /></div>
-      <div v-if="preview.loading" class="mt-3 text-[12.5px] text-ink-gray-5">Checking…</div>
-      <div v-else-if="preview.data" class="mt-3 rounded-md border border-outline-gray-1 bg-surface-gray-1 p-3.5 text-[13px]">
-        <span class="font-medium text-ink-gray-9">{{ preview.data.period }}</span> ·
-        <span class="font-medium text-ink-gray-9 tnum">{{ preview.data.pending }}</span> employee(s) ready to process
-        <span v-if="preview.data.eligible - preview.data.pending" class="text-ink-gray-5"> · {{ preview.data.eligible - preview.data.pending }} already run</span>
-        <div v-if="!preview.data.pending && !preview.data.eligible" class="mt-1 text-[12px] text-ink-gray-5">No one has compensation assigned yet — finish the Pay step first.</div>
+      <div v-if="preview.data" class="mt-3 text-[12.5px] text-ink-gray-5">
+        <span class="font-medium text-ink-gray-8">{{ preview.data.period }}</span> ·
+        <span class="tnum font-medium text-ink-gray-8">{{ preview.data.pending }}</span> ready to process
+        <span v-if="preview.data.eligible - preview.data.pending"> · {{ preview.data.eligible - preview.data.pending }} already run</span>
       </div>
+
+      <div v-if="sample.loading" class="mt-3 text-[12.5px] text-ink-gray-5">Computing a sample payslip…</div>
+      <!-- real computed payslip (non-destructive) -->
+      <div v-else-if="sample.data?.ok" class="mt-3 overflow-hidden rounded-lg border border-outline-gray-1">
+        <div class="flex items-center justify-between gap-3 bg-surface-gray-1 px-4 py-3">
+          <div class="min-w-0">
+            <div class="truncate text-[13.5px] font-medium text-ink-gray-9">{{ sample.data.employee_name }}</div>
+            <div class="truncate text-[11.5px] text-ink-gray-5">{{ sample.data.designation || "—" }} · {{ sample.data.state || "—" }} · {{ sample.data.period }}</div>
+          </div>
+          <Select v-if="sample.data.candidates?.length > 1" size="sm" :model-value="sample.data.employee"
+            :options="sample.data.candidates.map((c) => ({ label: c.employee_name, value: c.employee }))"
+            @update:model-value="pickSample" />
+        </div>
+        <div class="grid grid-cols-2 divide-x divide-outline-gray-1">
+          <div class="p-4">
+            <div class="mb-1.5 text-[10.5px] font-medium uppercase tracking-wide text-ink-gray-5">Earnings</div>
+            <div v-for="e in sample.data.earnings" :key="e.component" class="flex justify-between py-0.5 text-[12.5px]"><span class="text-ink-gray-7">{{ e.component }}</span><span class="tnum text-ink-gray-9">{{ inr(e.amount) }}</span></div>
+            <div class="mt-2 flex justify-between border-t border-outline-gray-1 pt-2 text-[12.5px] font-medium text-ink-gray-9"><span>Gross</span><span class="tnum">{{ inr(sample.data.gross_pay) }}</span></div>
+          </div>
+          <div class="p-4">
+            <div class="mb-1.5 text-[10.5px] font-medium uppercase tracking-wide text-ink-gray-5">Deductions</div>
+            <div v-for="dd in sample.data.deductions" :key="dd.component" class="flex justify-between py-0.5 text-[12.5px]"><span class="text-ink-gray-7">{{ dd.component }}</span><span class="tnum text-ink-gray-9">{{ inr(dd.amount) }}</span></div>
+            <div class="mt-2 flex justify-between border-t border-outline-gray-1 pt-2 text-[12.5px] font-medium text-ink-gray-9"><span>Total</span><span class="tnum">{{ inr(sample.data.total_deduction) }}</span></div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between bg-green-50 px-4 py-2.5">
+          <span class="text-[12.5px] font-medium text-green-800">Net pay</span>
+          <span class="tnum text-[15px] font-semibold text-green-800">{{ inr(sample.data.net_pay) }}</span>
+        </div>
+      </div>
+      <div v-else-if="sample.data && !sample.data.ok" class="mt-3 rounded-md border border-outline-gray-1 bg-surface-gray-1 p-3 text-[12.5px] text-ink-gray-6">
+        <span v-if="sample.data.reason === 'no_assignment'">Assign compensation first (the Pay step) to preview a payslip.</span>
+        <span v-else>Couldn't compute a preview: {{ sample.data.error }}</span>
+      </div>
+
       <div class="mt-5 flex justify-between">
         <Button variant="ghost" label="Back" @click="step = 4" />
         <div class="flex gap-2">

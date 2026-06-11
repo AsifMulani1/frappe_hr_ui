@@ -6,7 +6,7 @@ query against the employee's records.
 """
 
 import frappe
-from frappe.utils import getdate, nowdate, now_datetime, get_datetime, time_diff_in_seconds, add_days, formatdate, flt
+from frappe.utils import getdate, nowdate, now_datetime, get_datetime, time_diff_in_seconds, add_days, formatdate, flt, get_last_day
 
 
 # Per-leave-type accent (token-ish hex; the UI maps these to theme classes).
@@ -1405,6 +1405,58 @@ def preview_payroll(start_date, company=None):
 			"state": a.get("employment_state") or "—", "already_run": bool(exists)})
 	return {"period": start.strftime("%B %Y"), "eligible": len(rows),
 		"pending": sum(1 for r in rows if not r["already_run"]), "rows": rows}
+
+
+@frappe.whitelist()
+def preview_payslip(start_date, employee=None, company=None):
+	"""A real, computed payslip for ONE employee — WITHOUT persisting anything.
+
+	Builds a draft Salary Slip (which fires india_payroll's PT/ESI/LWF injection
+	exactly as a real run would), reads the computed earnings/deductions, then rolls
+	the transaction back so no slip is ever saved. The 'see it actually work' moment
+	before committing real payroll."""
+	_require_hr()
+	start = getdate(start_date)
+	end = get_last_day(start)
+	elig = _payroll_eligible(start, company)
+	if not elig:
+		return {"ok": False, "reason": "no_assignment", "period": start.strftime("%B %Y")}
+	# requested employee if eligible, otherwise the first eligible one
+	emp, a = (employee, elig[employee]) if (employee and employee in elig) else next(iter(elig.items()))
+	result, err = None, None
+	try:
+		frappe.flags.mute_messages = True
+		s = frappe.new_doc("Salary Slip")
+		s.employee = emp
+		s.company = a.company
+		s.salary_structure = a.salary_structure
+		s.payroll_frequency = "Monthly"
+		s.start_date = start
+		s.end_date = end
+		s.insert(ignore_permissions=True)  # computes pay + india_payroll PT/ESI/LWF
+		result = {
+			"ok": True,
+			"period": start.strftime("%B %Y"),
+			"employee": emp,
+			"employee_name": a.employee_name,
+			"designation": frappe.db.get_value("Employee", emp, "designation") or "",
+			"state": a.get("employment_state") or "",
+			"salary_structure": a.salary_structure,
+			"earnings": [{"component": r.salary_component, "amount": flt(r.amount)} for r in s.earnings if flt(r.amount)],
+			"deductions": [{"component": r.salary_component, "amount": flt(r.amount)} for r in s.deductions if flt(r.amount)],
+			"gross_pay": flt(s.gross_pay),
+			"total_deduction": flt(s.total_deduction),
+			"net_pay": flt(s.net_pay),
+			"candidates": [{"employee": e, "employee_name": x.employee_name} for e, x in list(elig.items())[:30]],
+		}
+	except Exception as e:
+		err = frappe.utils.strip_html(str(e))[:160]
+	finally:
+		frappe.db.rollback()  # discard the draft entirely — nothing persists
+		frappe.flags.mute_messages = False
+	if err:
+		return {"ok": False, "reason": "error", "error": err, "period": start.strftime("%B %Y")}
+	return result
 
 
 @frappe.whitelist(methods=["POST"])
