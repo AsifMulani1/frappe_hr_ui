@@ -151,3 +151,41 @@ def get_settings():
 	c = frappe.db.get_value("Company", company, ["company_name", "abbr", "default_currency", "country"], as_dict=True) or {}
 	leave_types = frappe.get_all("Leave Type", fields=["name", "max_leaves_allowed", "is_carry_forward", "is_lwp"], limit=20)
 	return {"company": c, "leave_types": leave_types}
+
+
+@frappe.whitelist()
+def get_recruitment_dashboard():
+	_require_hr()
+	applicants = frappe.db.count("Job Applicant", {})
+	interviews = frappe.db.count("Interview", {})
+	offers = frappe.db.count("Job Offer", {})
+	hired = frappe.db.count("Job Applicant", {"status": "Accepted"})
+	jobs = frappe.get_all("Job Opening", filters={"status": "Open"},
+		fields=["name", "job_title", "designation", "department"], order_by="creation desc", limit=6)
+	for j in jobs:
+		j["dept"] = (j.department or "").split(" - ")[0]
+		j["apps"] = frappe.db.count("Job Applicant", {"job_title": j.name})
+	today = getdate()
+	ivs = frappe.get_all("Interview", filters={"scheduled_on": [">=", today]},
+		fields=["name", "job_applicant", "interview_type", "scheduled_on"], order_by="scheduled_on asc", limit=6)
+	upcoming = []
+	for i in ivs:
+		cand = frappe.db.get_value("Job Applicant", i.job_applicant, "applicant_name") or i.job_applicant
+		upcoming.append({"cand": cand, "round": i.interview_type or "Interview",
+			"when": formatdate(i.scheduled_on, "dd MMM") if i.scheduled_on else "—"})
+	return {
+		"stats": {
+			"open_jobs": frappe.db.count("Job Opening", {"status": "Open"}),
+			"total_jobs": frappe.db.count("Job Opening", {}),
+			"applicants": applicants, "interviews": interviews, "offers": offers, "hired": hired,
+		},
+		"funnel": [
+			["Applied", applicants],
+			["Screening", frappe.db.count("Job Applicant", {"status": "Open"})],
+			["Interview", interviews],
+			["Offer", offers],
+			["Hired", hired],
+		],
+		"open_positions": jobs,
+		"upcoming": upcoming,
+	}

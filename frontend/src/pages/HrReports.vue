@@ -9,7 +9,7 @@ import ReportDrawer from "@/components/ui/ReportDrawer.vue"
 // Standard report catalogue (links into Frappe's report views).
 const CATS = [
   { cat: "Payroll", icon: "rupee", reports: ["Salary register", "TDS computation", "Bank advice", "Bank mandate"] },
-  { cat: "Statutory registers", icon: "shield", reports: ["ESIC register", "LWF register", "PF / ESI / PT register"] },
+  { cat: "Statutory registers", icon: "shield", reports: ["Professional Tax register", "ESIC register", "LWF register", "PF / ESI / PT register"] },
   { cat: "Attendance", icon: "calcheck", reports: ["Monthly muster roll", "Late & early-out", "Leave balance ledger"] },
   { cat: "People", icon: "users", reports: ["Headcount & demographics", "New joiners & exits", "Probation due"] },
   { cat: "Compliance", icon: "shield", reports: ["Form 16 batch", "Form 24Q", "Gratuity liability"] },
@@ -18,6 +18,7 @@ const CATS = [
 // Map displayed catalogue labels to real Frappe report names.
 const REPORT_MAP = {
   "Salary register": "Salary Register",
+  "Professional Tax register": "Professional Tax Register",
   "PF / ESI / PT register": "Salary Register",
   "ESIC register": "ESIC Register",
   "LWF register": "LWF Register",

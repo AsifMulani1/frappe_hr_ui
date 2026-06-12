@@ -175,3 +175,40 @@ def act_on_regularization(name, action):
 		frappe.delete_doc("Attendance Request", name, ignore_permissions=True, force=True)
 	frappe.db.commit()
 	return {"ok": True}
+
+
+@frappe.whitelist()
+def get_my_tickets():
+	tickets = frappe.get_all(
+		"Issue",
+		filters={"raised_by": frappe.session.user},
+		fields=["name", "subject", "status", "priority", "issue_type", "modified"],
+		order_by="modified desc",
+		limit=50,
+	)
+	for t in tickets:
+		t["updated"] = frappe.utils.pretty_date(t.modified)
+	return {"tickets": tickets}
+
+
+@frappe.whitelist()
+def get_ticket_thread(name):
+	issue = frappe.get_doc("Issue", name)
+	if issue.raised_by != frappe.session.user and not (set(HR_ROLES) & set(frappe.get_roles())) and frappe.session.user != "Administrator":
+		frappe.throw(frappe._("You are not permitted to view this ticket."), frappe.PermissionError)
+	comms = frappe.get_all(
+		"Communication",
+		filters={"reference_doctype": "Issue", "reference_name": name},
+		fields=["content", "sender", "sender_full_name", "creation"],
+		order_by="creation asc",
+	)
+	thread = [{
+		"who": c.sender_full_name or c.sender,
+		"me": c.sender == frappe.session.user,
+		"time": frappe.utils.format_datetime(c.creation, "d MMM, HH:mm"),
+		"text": frappe.utils.strip_html(c.content or ""),
+	} for c in comms]
+	return {
+		"id": issue.name, "subject": issue.subject, "status": issue.status,
+		"cat": issue.issue_type or "General", "thread": thread,
+	}

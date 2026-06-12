@@ -132,3 +132,46 @@ def get_employee_home():
 		"announcements": _announcements(),
 		"tasks": _tasks(employee),
 	}
+
+
+@frappe.whitelist()
+def get_tax_screen():
+	emp = _current_employee()
+	if not emp:
+		return {"employee": None}
+	# TDS paid this FY from salary slips
+	slips = frappe.get_all("Salary Slip", filters={"employee": emp["name"], "docstatus": 1},
+		fields=["name", "end_date"])
+	tds = 0.0
+	for s in slips:
+		tds += frappe.db.get_value("Salary Detail",
+			{"parent": s.name, "salary_component": "TDS", "parentfield": "deductions"}, "amount") or 0
+	# declarations (India)
+	decls = []
+	declared_total = 0
+	dec = frappe.get_all("Employee Tax Exemption Declaration",
+		filters={"employee": emp["name"]}, fields=["name"], limit=1)
+	if dec:
+		for d in frappe.get_all("Employee Tax Exemption Declaration Category",
+			filters={"parent": dec[0].name},
+			fields=["exemption_category", "max_amount", "amount"]):
+			decls.append({"sec": d.exemption_category, "limit": d.max_amount, "declared": d.amount})
+			declared_total += d.amount or 0
+	# flexible benefits from the latest salary slip's flexi components (real, not hardcoded)
+	fbp = []
+	if slips:
+		flexi_comps = {c.name for c in frappe.get_all("Salary Component", filters={"is_flexible_benefit": 1}, fields=["name"])}
+		if flexi_comps:
+			latest = sorted(slips, key=lambda s: s.end_date)[-1]
+			for e in frappe.get_all("Salary Detail",
+				filters={"parent": latest.name, "parentfield": "earnings"},
+				fields=["salary_component", "amount"]):
+				if e.salary_component in flexi_comps:
+					fbp.append([e.salary_component, e.amount])
+	return {
+		"employee": emp,
+		"tds_paid": tds,
+		"declarations": decls,
+		"declared_total": declared_total,
+		"fbp": fbp,
+	}
