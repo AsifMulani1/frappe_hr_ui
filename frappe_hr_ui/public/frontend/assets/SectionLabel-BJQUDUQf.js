@@ -1,2 +1,0 @@
-import{k as a,q as o,s as n,a8 as t,K as r,E as c}from"./frappe-ui-CchvDc_J.js";const l={class:"my-0.5 mb-3 flex items-center justify-between"},i={class:"text-[13px] font-medium tracking-[.01em] text-ink-gray-5"},d={__name:"SectionLabel",props:{label:String},setup(s){return(e,m)=>(a(),o("div",l,[n("h3",i,[t(e.$slots,"default",{},()=>[r(c(s.label),1)])]),t(e.$slots,"action")]))}};export{d as _};
-//# sourceMappingURL=SectionLabel-BJQUDUQf.js.map

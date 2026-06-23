@@ -10,6 +10,7 @@ import Tabs from "@/components/ui/Tabs.vue"
 import Field from "@/components/ui/Field.vue"
 import Drawer from "@/components/ui/Drawer.vue"
 import Icon from "@/components/ui/Icon.vue"
+import AsyncShell from "@/components/ui/AsyncShell.vue"
 
 const profile = createResource({
   url: "frappe_hr_ui.api.get_employee_profile",
@@ -115,21 +116,8 @@ const grid = "grid grid-cols-3 gap-x-7 gap-y-[18px]"
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="My profile" subtitle="View and manage your personal and job information" />
 
-    <div v-if="profile.loading && !profile.data" class="py-20 text-center text-[13px] text-ink-gray-5">
-      Loading profile…
-    </div>
-
-    <div v-else-if="profile.error" class="flex flex-col items-center gap-2 py-20 text-center">
-      <div class="text-[15px] font-medium text-ink-gray-8">Couldn't load your profile</div>
-      <div class="max-w-md text-[13px] text-ink-gray-5">{{ profile.error.messages?.[0] || "Please try again." }}</div>
-      <Button class="mt-2" variant="subtle" theme="gray" label="Retry" @click="profile.reload()" />
-    </div>
-
-    <div v-else-if="!e.name" class="py-20 text-center text-[13px] text-ink-gray-5">
-      No employee record linked to this user.
-    </div>
-
-    <div v-else class="grid items-start gap-5" style="grid-template-columns: minmax(0, 1fr) 320px">
+    <AsyncShell :resource="profile" :has-employee="!!e.name" loading-text="Loading profile…">
+    <div class="grid items-start gap-5" style="grid-template-columns: minmax(0, 1fr) 320px">
       <!-- left column -->
       <div class="flex flex-col gap-5">
         <!-- header card -->
@@ -321,6 +309,7 @@ const grid = "grid grid-cols-3 gap-x-7 gap-y-[18px]"
         </Card>
       </div>
     </div>
+    </AsyncShell>
 
     <!-- hidden uploader -->
     <input ref="fileInput" type="file" class="hidden" @change="onFileChange" />

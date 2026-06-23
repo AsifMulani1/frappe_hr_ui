@@ -35,7 +35,7 @@ const tiles = computed(() => {
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading team…">
     <StatTiles :items="tiles" :cols="4" />
-    <div class="grid items-start gap-5" style="grid-template-columns: minmax(0,1fr) 340px">
+    <div class="grid items-start gap-5" style="grid-template-columns: minmax(0, 1fr) 320px">
       <div class="flex flex-col gap-5">
         <Card :pad="false">
           <div class="p-5 pb-3.5"><CardHeader title="Today's attendance" sub="Live status" /></div>

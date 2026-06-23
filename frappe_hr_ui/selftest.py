@@ -23,11 +23,12 @@ HR = "fatima.sheikh@frappe.io"
 
 
 def run():
-    R = {"read": [0, 0], "write": [0, 0], "rbac": [0, 0], "engine": [0, 0], "fails": []}
+    R = {"read": [0, 0], "write": [0, 0], "rbac": [0, 0], "engine": [0, 0], "input": [0, 0], "fails": [], "skips": []}
     trash = []
 
     def ok(bucket): R[bucket][0] += 1
     def bad(bucket, msg): R[bucket][1] += 1; R["fails"].append(msg)
+    def skip(name, why): R["skips"].append(f"{name}: {why}")
 
     def read(user, name, fn):
         frappe.set_user(user)
@@ -65,7 +66,31 @@ def run():
         finally:
             frappe.set_user("Administrator")
 
+    def validates(user, name, make, doctype=None):
+        """A write that SHOULD be rejected. Pass = it raised; fail = it slipped through."""
+        frappe.set_user(user)
+        try:
+            res = make()
+        except Exception:
+            ok("input"); return
+        bad("input", f"INPUT {name}: invalid input was accepted")
+        if doctype:
+            nm = res.get("name") if isinstance(res, dict) else res
+            if isinstance(nm, str):
+                trash.append((doctype, nm))
+
+    # Preconditions: a green report is meaningless if the personas or seed data
+    # are absent, because the checks would just not run. Fail hard and early.
+    frappe.set_user("Administrator")
+    missing_users = [u for u in (EMP, MGR, HR) if not frappe.db.exists("User", u)]
     emp_obj = frappe.db.get_value("Employee", {"status": "Active"}, "name")
+    if missing_users or not emp_obj:
+        problems = []
+        if missing_users:
+            problems.append(f"demo personas not found: {missing_users}")
+        if not emp_obj:
+            problems.append("no Active Employee")
+        raise SystemExit("Self-test preconditions missing — " + "; ".join(problems) + ". Seed demo data first.")
 
     # ---------------- READS ----------------
     for n, f in [("home", api.get_employee_home), ("profile", api.get_employee_profile),
@@ -91,12 +116,19 @@ def run():
     read(HR, "import_template", lambda: ei.import_template())
 
     # ---------------- WRITES (create -> cleanup) ----------------
-    lt = api.get_leave_types()["types"][0]["value"]
     write(EMP, "toggle_checkin", lambda: {"name": _last_checkin(emp_obj)})
-    write(EMP, "apply_leave", lambda: api.apply_leave(lt, "2026-07-20", "2026-07-20", "selftest"), "Leave Application")
+    leave_types = api.get_leave_types().get("types") or []
+    if leave_types:
+        lt = leave_types[0]["value"]
+        write(EMP, "apply_leave", lambda: api.apply_leave(lt, "2026-07-20", "2026-07-20", "selftest"), "Leave Application")
+    else:
+        skip("apply_leave", "no leave types seeded")
     write(EMP, "submit_regularization", lambda: api.submit_regularization("2026-06-09", "Work From Home", "selftest"), "Attendance Request")
     et = (api.get_expense_types().get("types") or [{}])[0].get("value")
-    write(EMP, "submit_expense_claim", lambda: api.submit_expense_claim(et, 50, "2026-06-09", "selftest"), "Expense Claim")
+    if et:
+        write(EMP, "submit_expense_claim", lambda: api.submit_expense_claim(et, 50, "2026-06-09", "selftest"), "Expense Claim")
+    else:
+        skip("submit_expense_claim", "no expense claim types seeded")
     tkt = write(EMP, "raise_ticket", lambda: api.raise_ticket("selftest", "b", "Low"), "Issue")
     if tkt:
         write(EMP, "reply_ticket", lambda: api.reply_ticket(tkt["name"], "r"))
@@ -168,7 +200,10 @@ def run():
     iss = frappe.get_doc({"doctype": "Issue", "subject": "rbac", "raised_by": HR, "status": "Open"}).insert(ignore_permissions=True)
     frappe.db.commit(); trash.append(("Issue", iss.name))
     rbac("employee reads other's ticket", lambda: as_user(EMP, lambda: api.get_ticket_thread(iss.name)), True)
+    rbac("employee replies to other's ticket", lambda: as_user(EMP, lambda: api.reply_ticket(iss.name, "intrusion")), True)
     rbac("employee calls HR dashboard", lambda: as_user(EMP, lambda: api.get_hr_dashboard()), True)
+    rbac("employee opens HR employee-360", lambda: as_user(EMP, lambda: api.get_employee_360(emp_obj)), True)
+    rbac("employee opens HR doc detail", lambda: as_user(EMP, lambda: api.get_doc_detail("Employee", emp_obj)), True)
     rbac("employee creates via engine", lambda: as_user(EMP, lambda: dx.save_doc("Designation", frappe.as_json({"designation_name": "X"}))), True)
     rbac("engine blocks non-HR doctype", lambda: as_user(HR, lambda: dx.get_list("User")), True)
     # Salary IDOR: an employee must not read another employee's payslip.
@@ -177,39 +212,86 @@ def run():
     _other_slip = frappe.db.get_value("Salary Slip", {"employee": ["!=", _emp_of_emp or "__none__"], "docstatus": 1}, "name")
     if _other_slip:
         rbac("employee reads other's payslip", lambda: as_user(EMP, lambda: api.get_payslip_detail(_other_slip)), True)
+    else:
+        skip("employee reads other's payslip", "no other employee's submitted Salary Slip found")
     frappe.set_user(EMP)
-    p = (api.get_directory().get("people") or [{}])[0]
-    rbac("directory hides PII", lambda: (_ for _ in ()).throw(Exception()) if ("user_id" in p or "cell_number" in p) else None, False)
+    people = api.get_directory().get("people") or []
+    if not people:
+        skip("directory hides PII", "directory returned no people")
+    else:
+        person = people[0]
+        def assert_no_pii():
+            if "user_id" in person or "cell_number" in person:
+                raise Exception("PII leaked in directory payload")
+        rbac("directory hides PII", assert_no_pii, False)
+
+    # ---------------- NEGATIVE INPUTS (each call must be rejected) ----------------
+    frappe.set_user("Administrator")
+    gender = frappe.db.get_value("Gender", {}, "name")
+    if leave_types:
+        good_lt = leave_types[0]["value"]
+        validates(EMP, "apply_leave reversed dates",
+                  lambda: api.apply_leave(good_lt, "2026-07-22", "2026-07-20", "selftest"), "Leave Application")
+    else:
+        skip("apply_leave reversed dates", "no leave types seeded")
+    validates(EMP, "apply_leave unknown leave type",
+              lambda: api.apply_leave("__no_such_leave_type__", "2026-07-20", "2026-07-20", "selftest"), "Leave Application")
+    validates(HR, "create_employee empty first name",
+              lambda: api.create_employee(first_name="", gender=gender, date_of_birth="1995-01-01", date_of_joining="2026-06-01"), "Employee")
+    validates(HR, "create_employee birth after joining",
+              lambda: api.create_employee(first_name="Bad", last_name="Dates", gender=gender, date_of_birth="2030-01-01", date_of_joining="2026-06-01"), "Employee")
 
     # ---------------- cleanup ----------------
     frappe.set_user("Administrator")
+    orphans = []
     for dt, nm in trash:
         try:
             d = frappe.get_doc(dt, nm)
             if getattr(d, "docstatus", 0) == 1:
                 d.cancel()
             frappe.delete_doc(dt, nm, force=True, ignore_permissions=True)
-        except Exception:
-            pass
+        except Exception as e:
+            orphans.append(f"{dt} {nm}: {type(e).__name__}")
     frappe.db.commit()
+    if orphans:
+        bad("write", f"cleanup left {len(orphans)} orphan record(s): {'; '.join(orphans)}")
 
-    total_fail = sum(R[k][1] for k in ("read", "write", "engine", "rbac"))
+    buckets = ("read", "write", "engine", "rbac", "input")
+    total_fail = sum(R[k][1] for k in buckets)
     print("\n===== FRAPPE HR UI SELF-TEST =====")
-    for k in ("read", "write", "engine", "rbac"):
+    for k in buckets:
         print(f"{k.upper():8} {R[k][0]} pass / {R[k][1]} fail")
+    print(f"SKIPPED  {len(R['skips'])}")
     for f in R["fails"]:
         print("  ✗", f)
-    print("VERDICT:", "ALL PASS ✅" if total_fail == 0 else f"{total_fail} FAILURE(S) ⚠")
+    for s in R["skips"]:
+        print("  ⊘", s)
+    if total_fail:
+        verdict = f"{total_fail} FAILURE(S) ⚠"
+    elif R["skips"]:
+        verdict = f"PASS but {len(R['skips'])} check(s) SKIPPED — coverage incomplete ⚠"
+    else:
+        verdict = "ALL PASS ✅"
+    print("VERDICT:", verdict)
     return R
 
 
 def ci():
-	"""CI entrypoint — runs the self-test and raises (non-zero exit) on any failure."""
-	R = run()
-	fails = sum(R[k][1] for k in ("read", "write", "engine", "rbac"))
-	if fails:
-		raise SystemExit(f"Self-test FAILED with {fails} failure(s):\n" + "\n".join(R["fails"]))
-	print("Self-test passed.")
+    """CI entrypoint — exits non-zero on any failure OR skipped check.
+
+    A skip means a check could not run (missing seed/data), so coverage is
+    incomplete and the run cannot certify the backend. Treat it as not-green.
+    """
+    R = run()
+    fails = sum(R[k][1] for k in ("read", "write", "engine", "rbac", "input"))
+    problems = []
+    if fails:
+        problems.append(f"{fails} failure(s):\n" + "\n".join(R["fails"]))
+    if R["skips"]:
+        problems.append(f"{len(R['skips'])} skipped check(s) — coverage incomplete:\n" + "\n".join(R["skips"]))
+    if problems:
+        raise SystemExit("Self-test NOT production-ready —\n" + "\n\n".join(problems))
+    print("Self-test passed — all checks ran, 0 skipped.")
 
 
 def _last_checkin(_=None):

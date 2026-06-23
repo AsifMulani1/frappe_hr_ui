@@ -1,2 +1,0 @@
-import{u as o}from"./frappe-ui-CchvDc_J.js";function a(){return o({url:"frappe_hr_ui.api.get_employee_home",auto:!0,cache:"frappe_hr_ui:employee_home"})}function u(r){const e=Math.max(0,Math.round(r||0));return`${Math.floor(e/60)}h ${String(e%60).padStart(2,"0")}m`}const n={blue:{bar:"bg-blue-500",dot:"bg-blue-500"},green:{bar:"bg-green-500",dot:"bg-green-500"},violet:{bar:"bg-purple-500",dot:"bg-purple-500"},orange:{bar:"bg-orange-500",dot:"bg-orange-500"}};export{n as L,u as f,a as u};
-//# sourceMappingURL=useEmployeeHome-2ZNxgJ0Y.js.map
