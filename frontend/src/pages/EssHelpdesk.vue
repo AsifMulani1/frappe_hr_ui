@@ -99,7 +99,7 @@ function sendReply() {
                 <span class="text-2xs text-ink-gray-5">{{ m.time }}</span>
               </div>
               <div class="rounded-[10px] px-3 py-2.5 text-sm leading-relaxed"
-                :class="m.me ? 'bg-blue-600 text-white' : 'border border-outline-gray-1 bg-surface-white text-ink-gray-9'">{{ m.text }}</div>
+                :class="m.me ? 'bg-blue-600 text-white' : 'border border-outline-gray-1 bg-surface-base text-ink-gray-9'">{{ m.text }}</div>
             </div>
           </div>
           <EmptyState v-if="!(cur.thread || []).length" icon="inbox" title="No replies yet" compact />

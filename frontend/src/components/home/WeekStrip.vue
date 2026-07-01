@@ -6,7 +6,7 @@ const MAP = {
   present: "border-green-200 bg-green-50 text-green-700",
   active: "border-blue-200 bg-blue-50 text-blue-700 outline outline-1 outline-blue-500",
   leave: "border-orange-200 bg-orange-50 text-orange-700",
-  upcoming: "border-outline-gray-1 bg-surface-white text-ink-gray-5",
+  upcoming: "border-outline-gray-1 bg-surface-base text-ink-gray-5",
   weekoff: "border-outline-gray-1 bg-surface-gray-1 text-ink-gray-5",
 }
 </script>

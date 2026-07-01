@@ -124,7 +124,7 @@ const grid = "grid grid-cols-3 gap-x-7 gap-y-[18px]"
         <Card :pad="false" class="overflow-hidden">
           <div class="h-[76px] border-b border-outline-gray-1 bg-blue-50" />
           <div class="-mt-[34px] flex flex-wrap items-end gap-[18px] px-6 pb-5">
-            <div class="rounded-full ring-4 ring-surface-white">
+            <div class="rounded-full ring-4 ring-surface-base">
               <InitialsAvatar :name="e.employee_name" :image="e.image" :size="84" />
             </div>
             <div class="min-w-[200px] flex-1 pb-0.5">
@@ -279,7 +279,7 @@ const grid = "grid grid-cols-3 gap-x-7 gap-y-[18px]"
                 </div>
                 <div
                   v-if="(profile.data?.peers || []).length > 5"
-                  class="-ml-2 flex h-[26px] w-[26px] items-center justify-center rounded-full border-2 border-surface-white bg-surface-gray-2 text-2xs font-medium text-ink-gray-7"
+                  class="-ml-2 flex h-[26px] w-[26px] items-center justify-center rounded-full border-2 border-surface-base bg-surface-gray-2 text-2xs font-medium text-ink-gray-7"
                 >
                   +{{ profile.data.peers.length - 5 }}
                 </div>

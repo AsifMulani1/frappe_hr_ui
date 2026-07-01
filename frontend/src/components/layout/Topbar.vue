@@ -43,7 +43,7 @@ function toggleNotifs() {
 
 <template>
   <header
-    class="flex h-12 shrink-0 items-center gap-2 border-b border-outline-gray-1 bg-surface-white pl-2 pr-4 lg:gap-3 lg:pl-5"
+    class="flex h-12 shrink-0 items-center gap-2 border-b border-outline-gray-1 bg-surface-base pl-2 pr-4 lg:gap-3 lg:pl-5"
   >
     <!-- Hamburger (mobile only) -->
     <Button
@@ -72,11 +72,11 @@ function toggleNotifs() {
       <div class="relative">
         <Button variant="ghost" class="relative" label="Notifications" tooltip="Notifications" @click="toggleNotifs">
           <template #icon><Icon name="bell" :size="18" /></template>
-          <span v-if="unread" class="absolute right-1.5 top-1.5 h-[7px] w-[7px] rounded-full bg-red-500 ring-2 ring-surface-white" />
+          <span v-if="unread" class="absolute right-1.5 top-1.5 h-[7px] w-[7px] rounded-full bg-red-500 ring-2 ring-surface-base" />
         </Button>
         <template v-if="notifOpen">
           <div class="fixed inset-0 z-[59]" @click="notifOpen = false" />
-          <div class="absolute right-0 z-[60] mt-1 w-[340px] rounded-lg border border-outline-gray-1 bg-surface-white shadow-xl">
+          <div class="absolute right-0 z-[60] mt-1 w-[340px] rounded-lg border border-outline-gray-1 bg-surface-base shadow-xl">
             <div class="flex items-center justify-between border-b border-outline-gray-1 px-4 py-2.5">
               <span class="text-sm font-medium text-ink-gray-9">Notifications</span>
             </div>

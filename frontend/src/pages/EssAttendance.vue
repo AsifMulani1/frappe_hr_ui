@@ -108,7 +108,7 @@ const daysInMonth = computed(() => new Date(monthStart.value.getFullYear(), mont
           <div v-for="b in leadingBlanks" :key="'b' + b" />
           <div v-for="day in daysInMonth" :key="day"
             class="min-h-[52px] rounded-md border p-1.5"
-            :class="[CAL_TONE[d.calendar?.[day]] || 'border-outline-gray-1 bg-surface-white text-ink-gray-5', day === d.today ? 'outline outline-1 outline-blue-500' : '']">
+            :class="[CAL_TONE[d.calendar?.[day]] || 'border-outline-gray-1 bg-surface-base text-ink-gray-5', day === d.today ? 'outline outline-1 outline-blue-500' : '']">
             <div class="tnum text-xs font-medium text-ink-gray-9">{{ day }}</div>
             <div v-if="d.calendar?.[day]" class="mt-1 text-2xs font-medium leading-tight">
               {{ ({ "Present": "Present", "Work From Home": "WFH", "On Leave": "Leave", "Half Day": "½ day", "Absent": "Absent" })[d.calendar[day]] }}

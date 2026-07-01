@@ -54,8 +54,8 @@ function act(item, a) {
               <div class="mt-0.5 text-xs text-ink-gray-7">{{ a.detail }} · <span class="tnum font-medium text-ink-gray-9">{{ a.amount }}</span></div>
             </div>
             <div class="flex gap-1.5" @click.stop>
-              <Button variant="outline" theme="gray" size="sm" icon="x" @click="act(a, 'reject')" />
-              <Button variant="solid" theme="blue" size="sm" icon="check" @click="act(a, 'approve')" />
+              <Button variant="outline" theme="gray" size="sm" icon="lucide-x" @click="act(a, 'reject')" />
+              <Button variant="solid" theme="blue" size="sm" icon="lucide-check" @click="act(a, 'approve')" />
             </div>
           </div>
         </div>

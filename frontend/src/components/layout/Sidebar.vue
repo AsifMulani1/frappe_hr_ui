@@ -42,7 +42,7 @@ function isActive(item) {
 
 <template>
   <aside
-    class="fixed inset-y-0 left-0 z-[70] flex h-full w-[232px] flex-col border-r border-outline-gray-1 bg-surface-menu-bar transition-transform lg:static lg:z-auto lg:translate-x-0 lg:transition-all"
+    class="fixed inset-y-0 left-0 z-[70] flex h-full w-[232px] flex-col border-r border-outline-gray-1 bg-surface-base transition-transform lg:static lg:z-auto lg:translate-x-0 lg:transition-all"
     :class="[
       collapsed ? 'lg:w-[60px]' : 'lg:w-[232px]',
       ui.mobileNavOpen ? 'translate-x-0' : '-translate-x-full',
@@ -77,7 +77,7 @@ function isActive(item) {
         <span class="flex-1 text-left text-sm">Search</span>
         <template #suffix>
           <kbd
-            class="rounded border border-outline-gray-1 bg-surface-white px-1 font-mono text-2xs text-ink-gray-5"
+            class="rounded border border-outline-gray-1 bg-surface-base px-1 font-mono text-2xs text-ink-gray-5"
             >⌘K</kbd
           >
         </template>

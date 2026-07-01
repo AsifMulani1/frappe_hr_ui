@@ -28,7 +28,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKey))
     <div v-if="open" class="fixed inset-0 z-[60]">
       <div class="absolute inset-0 bg-black/30" @click="emit('close')" />
       <div
-        class="absolute bottom-0 right-0 top-0 flex max-w-[94vw] flex-col bg-surface-white shadow-2xl"
+        class="absolute bottom-0 right-0 top-0 flex max-w-[94vw] flex-col bg-surface-base shadow-2xl"
         :style="{ width: width + 'px' }"
       >
         <div class="flex items-start justify-between gap-3 border-b border-outline-gray-1 px-5 py-4">

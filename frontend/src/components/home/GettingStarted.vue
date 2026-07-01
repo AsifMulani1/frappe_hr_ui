@@ -77,7 +77,7 @@ function dismiss() { dismissed.value = true; localStorage.setItem(DISMISS_KEY, "
 </script>
 
 <template>
-  <div v-if="show" class="rounded-xl border border-outline-gray-1 bg-surface-white p-5">
+  <div v-if="show" class="rounded-xl border border-outline-gray-1 bg-surface-base p-5">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <div class="text-md font-medium text-ink-gray-9">

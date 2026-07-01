@@ -1,0 +1,2 @@
+import{k as o,q as r,aa as s,F as t}from"./frappe-ui-jGaLw84a.js";const n={__name:"Card",props:{pad:{type:Boolean,default:!0},hover:{type:Boolean,default:!1}},setup(e){return(a,d)=>(o(),r("div",{class:t(["rounded-[10px] border border-outline-gray-1 bg-surface-base shadow-sm transition-shadow",[e.pad?"p-5":"",e.hover?"hover:border-outline-gray-2 hover:shadow-md":""]])},[s(a.$slots,"default")],2))}};export{n as _};
+//# sourceMappingURL=Card-DT5GTBI6.js.map

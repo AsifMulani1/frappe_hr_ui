@@ -39,7 +39,7 @@ const showEmpty = computed(() => !props.loading && !props.rows.length)
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-[10px] border border-outline-gray-1 bg-surface-white">
+  <div class="overflow-hidden rounded-[10px] border border-outline-gray-1 bg-surface-base">
     <ListView
       v-if="!showEmpty"
       :columns="listColumns"

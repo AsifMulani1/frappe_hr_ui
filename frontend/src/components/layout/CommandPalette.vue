@@ -92,7 +92,7 @@ onUnmounted(() => document.removeEventListener("keydown", onGlobalKey))
   <Teleport to="body">
     <div v-if="ui.searchOpen" class="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-[12vh]">
       <div class="absolute inset-0 bg-black/30" @click="ui.closeSearch()" />
-      <div class="relative w-full max-w-[560px] overflow-hidden rounded-xl border border-outline-gray-2 bg-surface-white shadow-2xl">
+      <div class="relative w-full max-w-[560px] overflow-hidden rounded-xl border border-outline-gray-2 bg-surface-base shadow-2xl">
         <!-- input -->
         <div class="flex items-center gap-2.5 border-b border-outline-gray-1 px-4">
           <Icon name="search" :size="17" class="text-ink-gray-5" />
