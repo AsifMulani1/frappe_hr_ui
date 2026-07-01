@@ -78,15 +78,15 @@ function toggleNotifs() {
           <div class="fixed inset-0 z-[59]" @click="notifOpen = false" />
           <div class="absolute right-0 z-[60] mt-1 w-[340px] rounded-lg border border-outline-gray-1 bg-surface-white shadow-xl">
             <div class="flex items-center justify-between border-b border-outline-gray-1 px-4 py-2.5">
-              <span class="text-[13px] font-medium text-ink-gray-9">Notifications</span>
+              <span class="text-sm font-medium text-ink-gray-9">Notifications</span>
             </div>
             <div class="max-h-[360px] overflow-y-auto">
-              <div v-if="!items.length" class="px-4 py-8 text-center text-[12.5px] text-ink-gray-5">You're all caught up.</div>
+              <div v-if="!items.length" class="px-4 py-8 text-center text-xs text-ink-gray-5">You're all caught up.</div>
               <div v-for="n in items" :key="n.name" class="flex gap-2.5 border-b border-outline-gray-1 px-4 py-3 last:border-b-0">
                 <div class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-gray-2 text-ink-gray-7"><Icon name="bell" :size="14" /></div>
                 <div class="min-w-0 flex-1">
-                  <div class="text-[12.5px] leading-snug text-ink-gray-9">{{ n.subject }}</div>
-                  <div class="mt-0.5 text-[11px] text-ink-gray-5">{{ n.time }}</div>
+                  <div class="text-xs leading-snug text-ink-gray-9">{{ n.subject }}</div>
+                  <div class="mt-0.5 text-2xs text-ink-gray-5">{{ n.time }}</div>
                 </div>
               </div>
             </div>
@@ -98,7 +98,7 @@ function toggleNotifs() {
       <Dropdown :options="userMenu" placement="right">
         <Button variant="ghost">
           <template #prefix><InitialsAvatar :name="fullName" :size="24" /></template>
-          <span class="whitespace-nowrap text-[13px] font-medium text-ink-gray-9">{{ fullName.split(" ")[0] }}</span>
+          <span class="whitespace-nowrap text-sm font-medium text-ink-gray-9">{{ fullName.split(" ")[0] }}</span>
           <template #suffix><Icon name="chevDown" :size="14" class="text-ink-gray-5" /></template>
         </Button>
       </Dropdown>

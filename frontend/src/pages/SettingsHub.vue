@@ -51,14 +51,14 @@ function open(item) {
         >
           <div class="flex w-full items-center gap-2.5">
             <Icon :name="cat.icon" :size="16" :class="active === cat.label ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
-            <span class="flex-1 truncate text-[13px]" :class="active === cat.label ? 'font-medium text-ink-gray-9' : 'font-normal text-ink-gray-7'">{{ cat.label }}</span>
+            <span class="flex-1 truncate text-sm" :class="active === cat.label ? 'font-medium text-ink-gray-9' : 'font-normal text-ink-gray-7'">{{ cat.label }}</span>
           </div>
         </Button>
       </nav>
 
       <!-- Cards for the active category -->
       <div>
-        <h2 class="mb-3 text-[13px] font-medium text-ink-gray-5">{{ current.label }}</h2>
+        <h2 class="mb-3 text-sm font-medium text-ink-gray-5">{{ current.label }}</h2>
         <div class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))">
           <Button
             v-for="item in current.items"
@@ -73,10 +73,10 @@ function open(item) {
               </span>
               <span class="min-w-0 flex-1">
                 <span class="flex items-center justify-between gap-2">
-                  <span class="truncate text-[13.5px] font-medium text-ink-gray-9">{{ item.label }}</span>
+                  <span class="truncate text-sm font-medium text-ink-gray-9">{{ item.label }}</span>
                   <Icon name="chevRight" :size="15" class="shrink-0 text-ink-gray-4" />
                 </span>
-                <span class="mt-0.5 block text-[12px] leading-snug text-ink-gray-5">{{ item.desc }}</span>
+                <span class="mt-0.5 block text-xs leading-snug text-ink-gray-5">{{ item.desc }}</span>
               </span>
             </span>
           </Button>

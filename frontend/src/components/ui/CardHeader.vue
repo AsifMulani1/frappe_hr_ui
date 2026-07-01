@@ -17,8 +17,8 @@ defineProps({
         <Icon :name="icon" :size="17" />
       </div>
       <div class="min-w-0">
-        <div class="text-[15px] font-medium text-ink-gray-9">{{ title }}</div>
-        <div v-if="sub" class="mt-px text-[12.5px] text-ink-gray-5">{{ sub }}</div>
+        <div class="text-md font-medium text-ink-gray-9">{{ title }}</div>
+        <div v-if="sub" class="mt-px text-xs text-ink-gray-5">{{ sub }}</div>
       </div>
     </div>
     <slot name="action" />

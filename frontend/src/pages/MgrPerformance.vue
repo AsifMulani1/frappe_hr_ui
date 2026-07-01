@@ -36,8 +36,8 @@ function label(p) { return p >= 70 ? "On track" : p >= 50 ? "Steady" : "Needs fo
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Team performance" subtitle="Goal progress and ratings across your reports">
-      <template #actions><Button variant="solid" theme="blue" label="Start reviews" @click="openAdd"><template #prefix><Icon name="target" :size="15" /></template></Button></template>
+    <PageHeader title="Team Performance" subtitle="Goal progress and ratings across your reports">
+      <template #actions><Button variant="solid" theme="blue" label="Start Reviews" @click="openAdd"><template #prefix><Icon name="target" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading team performance…">
     <Card :pad="false">
@@ -47,12 +47,12 @@ function label(p) { return p >= 70 ? "On track" : p >= 50 ? "Steady" : "Needs fo
         <div v-else class="flex flex-col">
           <div v-for="(t, i) in team" :key="t.name" class="flex items-center gap-4 py-3.5" :class="i ? 'border-t border-outline-gray-1' : ''">
             <InitialsAvatar :name="t.name" :size="36" />
-            <div class="w-40 min-w-0"><div class="truncate text-[13.5px] font-medium text-ink-gray-9">{{ t.name }}</div><div class="text-[11.5px] text-ink-gray-5">{{ t.designation }}</div></div>
+            <div class="w-40 min-w-0"><div class="truncate text-sm font-medium text-ink-gray-9">{{ t.name }}</div><div class="text-xs text-ink-gray-5">{{ t.designation }}</div></div>
             <div class="max-w-[240px] flex-1">
-              <div class="mb-1.5 flex justify-between"><span class="text-[11.5px] text-ink-gray-5">Goal progress</span><span class="tnum text-[12px] font-medium">{{ t.progress }}%</span></div>
+              <div class="mb-1.5 flex justify-between"><span class="text-xs text-ink-gray-5">Goal progress</span><span class="tnum text-xs font-medium">{{ t.progress }}%</span></div>
               <ProgressBar :value="t.progress" :color="barColor(t.progress)" />
             </div>
-            <div class="w-[70px] text-center"><div class="text-[11.5px] text-ink-gray-5">Rating</div><div class="tnum text-[15px] font-medium">{{ t.rating ?? "—" }}</div></div>
+            <div class="w-[70px] text-center"><div class="text-xs text-ink-gray-5">Rating</div><div class="tnum text-md font-medium">{{ t.rating ?? "—" }}</div></div>
             <StatusBadge :tone="tone(t.progress)" size="sm" :label="label(t.progress)" />
           </div>
         </div>
@@ -61,7 +61,7 @@ function label(p) { return p >= 70 ? "On track" : p >= 50 ? "Steady" : "Needs fo
     </AsyncShell>
 
     <FormDrawer :open="add.open" title="Start reviews" subtitle="Create an appraisal for the cycle"
-      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Create appraisal"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Create Appraisal"
       @close="add.open = false" @submit="add.submit(form, ['employee', 'appraisal_cycle'])" />
   </div>
 </template>

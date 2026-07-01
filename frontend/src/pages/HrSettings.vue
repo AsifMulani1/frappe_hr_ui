@@ -40,7 +40,7 @@ const leaveCols = [
       </Card>
       <Card>
         <div v-if="active === 'company'">
-          <SectionLabel label="Company profile" />
+          <SectionLabel label="Company Profile" />
           <div class="grid grid-cols-2 gap-x-5 gap-y-4">
             <Field label="Legal name" :value="d.company?.company_name" />
             <Field label="Abbreviation" :value="d.company?.abbr" />
@@ -49,7 +49,7 @@ const leaveCols = [
           </div>
         </div>
         <div v-else-if="active === 'leave'">
-          <SectionLabel label="Leave types & policies" />
+          <SectionLabel label="Leave Types & Policies" />
           <DataTable :columns="leaveCols" :rows="d.leave_types || []" row-key="name">
             <template #cell-name="{ row }"><span class="font-medium">{{ row.name }}</span></template>
             <template #cell-max_leaves_allowed="{ row }"><span class="tnum">{{ row.max_leaves_allowed || '—' }}</span></template>
@@ -61,7 +61,7 @@ const leaveCols = [
           <div class="flex flex-col">
             <div v-for="(t, i) in ['Auto-approve regularizations under 15 min', 'Lock payroll 5 days before pay date', 'Allow employees to download Form 16', 'Notify managers of pending approvals daily']" :key="t"
               class="flex items-center justify-between py-3.5" :class="i ? 'border-t border-outline-gray-1' : ''">
-              <span class="text-[13.5px] text-ink-gray-9">{{ t }}</span>
+              <span class="text-sm text-ink-gray-9">{{ t }}</span>
               <div class="h-[22px] w-[38px] rounded-full p-0.5" :class="i % 2 === 0 ? 'bg-blue-500' : 'bg-surface-gray-3'">
                 <div class="h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform" :class="i % 2 === 0 ? 'translate-x-4' : ''" />
               </div>

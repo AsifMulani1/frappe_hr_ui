@@ -46,7 +46,7 @@ function openRep(label) {
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Report builder" subtitle="Generate and schedule standard HR & payroll reports" />
+    <PageHeader title="Report Builder" subtitle="Generate and schedule standard HR & payroll reports" />
     <div class="grid gap-5" style="grid-template-columns: repeat(auto-fill, minmax(290px, 1fr))">
       <Card v-for="c in CATS" :key="c.cat">
         <CardHeader :title="c.cat" :icon="c.icon" />

@@ -84,7 +84,7 @@ const daysInMonth = computed(() => new Date(monthStart.value.getFullYear(), mont
 
     <div class="grid items-start gap-5" style="grid-template-columns: minmax(0,1fr) 380px">
       <div>
-        <SectionLabel label="Daily log" />
+        <SectionLabel label="Daily Log" />
         <DataTable :columns="columns" :rows="d.logs || []" row-key="date" :loading="r.loading"
           empty-title="No attendance yet" empty-message="Your daily check-in records will appear here.">
           <template #cell-date="{ row }"><span class="font-medium">{{ row.date }}</span></template>
@@ -104,13 +104,13 @@ const daysInMonth = computed(() => new Date(monthStart.value.getFullYear(), mont
       <Card>
         <CardHeader :title="d.month" sub="Attendance calendar" />
         <div class="grid grid-cols-7 gap-1.5">
-          <div v-for="dd in days" :key="dd" class="pb-1 text-center text-[11.5px] font-medium text-ink-gray-5">{{ dd }}</div>
+          <div v-for="dd in days" :key="dd" class="pb-1 text-center text-xs font-medium text-ink-gray-5">{{ dd }}</div>
           <div v-for="b in leadingBlanks" :key="'b' + b" />
           <div v-for="day in daysInMonth" :key="day"
             class="min-h-[52px] rounded-md border p-1.5"
             :class="[CAL_TONE[d.calendar?.[day]] || 'border-outline-gray-1 bg-surface-white text-ink-gray-5', day === d.today ? 'outline outline-1 outline-blue-500' : '']">
-            <div class="tnum text-[12px] font-medium text-ink-gray-9">{{ day }}</div>
-            <div v-if="d.calendar?.[day]" class="mt-1 text-[10px] font-medium leading-tight">
+            <div class="tnum text-xs font-medium text-ink-gray-9">{{ day }}</div>
+            <div v-if="d.calendar?.[day]" class="mt-1 text-2xs font-medium leading-tight">
               {{ ({ "Present": "Present", "Work From Home": "WFH", "On Leave": "Leave", "Half Day": "½ day", "Absent": "Absent" })[d.calendar[day]] }}
             </div>
           </div>
@@ -119,7 +119,7 @@ const daysInMonth = computed(() => new Date(monthStart.value.getFullYear(), mont
     </div>
     </AsyncShell>
 
-    <Drawer :open="open" title="Regularize attendance" subtitle="Request a correction for a missed or incorrect punch" @close="open = false">
+    <Drawer :open="open" title="Regularize Attendance" subtitle="Request a correction for a missed or incorrect punch" @close="open = false">
       <div class="flex flex-col gap-4">
         <DateField label="Date" v-model="form.from_date" />
         <FormControl type="select" label="Reason" :options="['Work From Home', 'On Duty']" v-model="form.reason" />
@@ -127,7 +127,7 @@ const daysInMonth = computed(() => new Date(monthStart.value.getFullYear(), mont
       </div>
       <template #footer>
         <Button variant="ghost" label="Cancel" @click="open = false" />
-        <Button variant="solid" theme="blue" label="Submit request" :loading="submit.loading" @click="submitReg" />
+        <Button variant="solid" theme="blue" label="Submit Request" :loading="submit.loading" @click="submitReg" />
       </template>
     </Drawer>
   </div>

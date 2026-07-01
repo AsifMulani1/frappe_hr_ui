@@ -19,9 +19,9 @@ const MAP = {
       class="rounded-md border px-1.5 py-2 text-center"
       :class="MAP[d.status] || MAP.upcoming"
     >
-      <div class="text-[11px] font-medium text-ink-gray-5">{{ d.d }}</div>
-      <div class="tnum my-0.5 text-[16px] font-medium text-ink-gray-9">{{ d.date }}</div>
-      <div class="text-[10.5px] font-medium">
+      <div class="text-2xs font-medium text-ink-gray-5">{{ d.d }}</div>
+      <div class="tnum my-0.5 text-lg font-medium text-ink-gray-9">{{ d.date }}</div>
+      <div class="text-2xs font-medium">
         <span v-if="d.status === 'present'">Present</span>
         <span v-else-if="d.status === 'active'">Today</span>
         <span v-else-if="d.status === 'leave'">Leave</span>

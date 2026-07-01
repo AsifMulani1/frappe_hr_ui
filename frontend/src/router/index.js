@@ -15,12 +15,12 @@ const routes = [
   {
     path: "/reimbursements", name: "EssReimburse",
     component: () => import("@/pages/ClaimsView.vue"),
-    props: { title: "Reimbursements", subtitle: "Claim work expenses paid out of pocket", addLabel: "New reimbursement" },
+    props: { title: "Reimbursements", subtitle: "Claim work expenses paid out of pocket", addLabel: "New Reimbursement" },
   },
   {
     path: "/expenses", name: "EssExpense",
     component: () => import("@/pages/ClaimsView.vue"),
-    props: { title: "Expenses & advances", subtitle: "Submit travel expenses and request salary advances", addLabel: "New expense claim" },
+    props: { title: "Expenses & Advances", subtitle: "Submit travel expenses and request salary advances", addLabel: "New Expense Claim" },
   },
   { path: "/performance", name: "EssPerformance", component: () => import("@/pages/EssPerformance.vue") },
   { path: "/helpdesk", name: "EssHelpdesk", component: () => import("@/pages/EssHelpdesk.vue") },
@@ -29,7 +29,7 @@ const routes = [
   {
     path: "/advances", name: "EssAdvance", component: () => import("@/pages/EssRequest.vue"),
     props: {
-      doctype: "Employee Advance", title: "Advances", subtitle: "Request a salary or travel advance", addLabel: "New advance",
+      doctype: "Employee Advance", title: "Advances", subtitle: "Request a salary or travel advance", addLabel: "New Advance",
       fields: [
         { key: "purpose", label: "Purpose", type: "textarea", cols: 2, placeholder: "What is this advance for?" },
         { key: "advance_amount", label: "Amount (₹)", type: "number", cols: 1, placeholder: "0" },
@@ -41,7 +41,7 @@ const routes = [
   {
     path: "/comp-off", name: "EssCompOff", component: () => import("@/pages/EssRequest.vue"),
     props: {
-      doctype: "Compensatory Leave Request", title: "Comp-off", subtitle: "Claim time off for working on a holiday", addLabel: "Request comp-off",
+      doctype: "Compensatory Leave Request", title: "Comp-off", subtitle: "Claim time off for working on a holiday", addLabel: "Request Comp-off",
       fields: [
         { key: "work_from_date", label: "Worked from", type: "date", cols: 1 },
         { key: "work_end_date", label: "Worked to", type: "date", cols: 1 },
@@ -54,7 +54,7 @@ const routes = [
   {
     path: "/encashment", name: "EssEncashment", component: () => import("@/pages/EssRequest.vue"),
     props: {
-      doctype: "Leave Encashment", title: "Leave encashment", subtitle: "Encash your eligible leave balance", addLabel: "Request encashment",
+      doctype: "Leave Encashment", title: "Leave Encashment", subtitle: "Encash your eligible leave balance", addLabel: "Request Encashment",
       fields: [
         { key: "leave_period", label: "Leave period", type: "select", linkDoctype: "Leave Period", cols: 2 },
         { key: "leave_type", label: "Leave type", type: "select", linkDoctype: "Leave Type", cols: 2 },

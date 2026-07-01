@@ -14,7 +14,7 @@ const emit = defineEmits(["update:modelValue"])
       <input
         :value="modelValue"
         :placeholder="search"
-        class="w-full border-0 bg-transparent text-[13.5px] text-ink-gray-9 outline-none ring-0 focus:outline-none focus:ring-0 focus:shadow-none"
+        class="w-full border-0 bg-transparent text-sm text-ink-gray-9 outline-none ring-0 focus:outline-none focus:ring-0 focus:shadow-none"
         @input="emit('update:modelValue', $event.target.value)"
       />
     </div>

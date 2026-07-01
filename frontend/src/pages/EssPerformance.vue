@@ -46,25 +46,25 @@ function tone(p) { return p >= 70 ? "success" : p >= 40 ? "accent" : "warning" }
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Performance" :subtitle="d.cycle ? `${d.cycle} cycle · goals, check-ins and appraisal` : 'Goals, check-ins and appraisal'">
       <template #actions>
-        <Button variant="outline" theme="gray" label="Request feedback" @click="requestFeedback"><template #prefix><Icon name="users" :size="15" /></template></Button>
-        <Button variant="solid" theme="blue" label="Start self-appraisal" @click="openAppraisal"><template #prefix><Icon name="edit" :size="15" /></template></Button>
+        <Button variant="outline" theme="gray" label="Request Feedback" @click="requestFeedback"><template #prefix><Icon name="users" :size="15" /></template></Button>
+        <Button variant="solid" theme="blue" label="Start Self-appraisal" @click="openAppraisal"><template #prefix><Icon name="edit" :size="15" /></template></Button>
       </template>
     </PageHeader>
     <AsyncShell :resource="r" :has-employee="!!d.employee" loading-text="Loading performance…">
     <StatTiles :items="tiles" :cols="4" />
     <Card>
-      <CardHeader title="Goals & key results" sub="Weighted by impact" />
+      <CardHeader title="Goals & Key Results" sub="Weighted by impact" />
       <div v-if="goals.length">
         <div v-for="(g, i) in goals" :key="i" class="border-t border-outline-gray-1 py-4 first:border-t-0">
           <div class="flex items-start justify-between gap-3">
             <div class="flex-1">
               <div class="flex items-center gap-2">
-                <span class="text-[14px] font-medium text-ink-gray-9">{{ g.title }}</span>
+                <span class="text-base font-medium text-ink-gray-9">{{ g.title }}</span>
                 <StatusBadge :tone="tone(g.progress)" size="sm" :label="g.progress >= 70 ? 'On track' : g.progress >= 40 ? 'At risk' : 'Behind'" />
               </div>
-              <div class="mt-1 text-[12.5px] text-ink-gray-5">Weight {{ g.weight }}%</div>
+              <div class="mt-1 text-xs text-ink-gray-5">Weight {{ g.weight }}%</div>
             </div>
-            <div class="tnum text-[18px] font-medium text-ink-gray-9">{{ g.progress }}%</div>
+            <div class="tnum text-2xl font-medium text-ink-gray-9">{{ g.progress }}%</div>
           </div>
           <div class="mt-2.5"><ProgressBar :value="g.progress" :color="barColor(g.progress)" /></div>
         </div>
@@ -73,8 +73,8 @@ function tone(p) { return p >= 70 ? "success" : p >= 40 ? "accent" : "warning" }
     </Card>
     </AsyncShell>
 
-    <FormDrawer :open="add.open" title="Start self-appraisal" subtitle="Begin your appraisal for the cycle"
-      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Start appraisal"
+    <FormDrawer :open="add.open" title="Start Self-appraisal" subtitle="Begin your appraisal for the cycle"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Start Appraisal"
       @close="add.open = false" @submit="add.submit(form, ['appraisal_cycle'])" />
   </div>
 </template>

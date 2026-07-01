@@ -50,8 +50,8 @@ const tiles = computed(() => {
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Job openings" :subtitle="`${(d.jobs || []).length} requisitions`">
-      <template #actions><Button variant="solid" theme="blue" label="New requisition" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+    <PageHeader title="Job Openings" :subtitle="`${(d.jobs || []).length} requisitions`">
+      <template #actions><Button variant="solid" theme="blue" label="New Requisition" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading job openings…">
     <StatTiles :items="tiles" :cols="4" />
@@ -59,22 +59,22 @@ const tiles = computed(() => {
     <div v-else class="grid gap-3.5" style="grid-template-columns: repeat(auto-fill, minmax(330px, 1fr))">
       <Card v-for="j in d.jobs" :key="j.name" hover class="!p-[18px]">
         <div class="mb-2.5 flex items-start justify-between">
-          <div><div class="text-[15px] font-medium text-ink-gray-9">{{ j.job_title }}</div><div class="tnum mt-0.5 text-[12px] text-ink-gray-5">{{ j.name }}</div></div>
+          <div><div class="text-md font-medium text-ink-gray-9">{{ j.job_title }}</div><div class="tnum mt-0.5 text-xs text-ink-gray-5">{{ j.name }}</div></div>
           <StatusBadge :tone="j.status === 'Open' ? 'success' : 'neutral'" size="sm" dot :label="j.status" />
         </div>
         <div class="mb-3.5 flex flex-wrap gap-1.5">
           <StatusBadge tone="neutral" size="sm" :label="j.dept" /><StatusBadge v-if="j.designation" tone="neutral" size="sm" :label="j.designation" />
         </div>
         <div class="flex items-center justify-between border-t border-outline-gray-1 pt-3.5">
-          <div><div class="tnum text-[20px] font-medium">{{ j.apps }}</div><div class="text-[11px] text-ink-gray-5">applicants</div></div>
+          <div><div class="tnum text-3xl font-medium">{{ j.apps }}</div><div class="text-2xs text-ink-gray-5">applicants</div></div>
           <Button variant="outline" theme="gray" size="sm" label="View" @click="openView(j)"><template #suffix><Icon name="chevRight" :size="15" /></template></Button>
         </div>
       </Card>
     </div>
     </AsyncShell>
 
-    <FormDrawer :open="add.open" title="New requisition" subtitle="Open a new position for hiring"
-      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Create requisition"
+    <FormDrawer :open="add.open" title="New Requisition" subtitle="Open a new position for hiring"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Create Requisition"
       @close="add.open = false" @submit="add.submit(form, ['job_title', 'designation'])" />
     <DetailDrawer :open="view.open" doctype="Job Opening" :name="view.name" @close="view.open = false" />
   </div>

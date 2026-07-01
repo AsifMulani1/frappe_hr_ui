@@ -71,7 +71,7 @@ const columns = [
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader :title="`Payroll run — ${d.period || ''}`" subtitle="Monthly cycle">
-      <template #actions><Button variant="solid" theme="blue" label="Run payroll" @click="openRun"><template #prefix><Icon name="rupee" :size="15" /></template></Button></template>
+      <template #actions><Button variant="solid" theme="blue" label="Run Payroll" @click="openRun"><template #prefix><Icon name="rupee" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading payroll run…">
     <Card class="mb-5">
@@ -79,11 +79,11 @@ const columns = [
         <div class="flex items-center">
           <template v-for="(s, i) in STEPS" :key="s">
             <div class="flex items-center gap-2">
-              <div class="flex h-[26px] w-[26px] items-center justify-center rounded-full text-[12px] font-medium"
+              <div class="flex h-[26px] w-[26px] items-center justify-center rounded-full text-xs font-medium"
                 :class="i < 2 ? 'bg-green-500 text-white' : i === 2 ? 'bg-blue-500 text-white' : 'border-[1.5px] border-outline-gray-2 text-ink-gray-5'">
                 <Icon v-if="i < 2" name="check" :size="13" :stroke-width="3" /><span v-else>{{ i + 1 }}</span>
               </div>
-              <span class="text-[13px]" :class="i === 2 ? 'font-medium text-ink-gray-9' : 'text-ink-gray-5'">{{ s }}</span>
+              <span class="text-sm" :class="i === 2 ? 'font-medium text-ink-gray-9' : 'text-ink-gray-5'">{{ s }}</span>
             </div>
             <div v-if="i < STEPS.length - 1" class="mx-3 h-0.5 w-9" :class="i < 2 ? 'bg-green-500' : 'bg-outline-gray-1'" />
           </template>
@@ -105,17 +105,17 @@ const columns = [
     </Card>
     </AsyncShell>
 
-    <Drawer :open="runOpen" title="Run payroll" subtitle="Generate and submit salary slips for the month" :width="460" @close="runOpen = false">
+    <Drawer :open="runOpen" title="Run Payroll" subtitle="Generate and submit salary slips for the month" :width="460" @close="runOpen = false">
       <div class="flex flex-col gap-4">
         <DateField label="Payroll month" v-model="period" placeholder="Pick any date in the month" />
-        <div v-if="preview.data" class="rounded-md border border-outline-gray-1 bg-surface-gray-1 p-3.5 text-[13px]">
+        <div v-if="preview.data" class="rounded-md border border-outline-gray-1 bg-surface-gray-1 p-3.5 text-sm">
           <div class="font-medium text-ink-gray-9">{{ preview.data.period }}</div>
           <div class="mt-1 text-ink-gray-6">
             <span class="font-medium text-ink-gray-9 tnum">{{ preview.data.pending }}</span> employee(s) to process
             <span v-if="preview.data.eligible - preview.data.pending"> · {{ preview.data.eligible - preview.data.pending }} already run</span>
           </div>
         </div>
-        <p class="text-[11.5px] text-ink-gray-4">Statutory deductions (PF, PT, ESI, LWF, TDS) are computed automatically. Slips already created for this month are skipped.</p>
+        <p class="text-xs text-ink-gray-4">Statutory deductions (PF, PT, ESI, LWF, TDS) are computed automatically. Slips already created for this month are skipped.</p>
       </div>
       <template #footer>
         <Button variant="ghost" label="Cancel" @click="runOpen = false" />

@@ -53,9 +53,9 @@ function submit() {
 
 <template>
   <div class="mx-auto max-w-[1100px] px-6 py-[22px]">
-    <PageHeader title="Users & access" subtitle="Create users and grant HR, approver and manager roles">
+    <PageHeader title="Users & Access" subtitle="Create users and grant HR, approver and manager roles">
       <template #actions>
-        <Button variant="solid" theme="blue" label="Add user" @click="openNew"><template #prefix><Icon name="plus" :size="15" /></template></Button>
+        <Button variant="solid" theme="blue" label="Add User" @click="openNew"><template #prefix><Icon name="plus" :size="15" /></template></Button>
       </template>
     </PageHeader>
 
@@ -65,12 +65,12 @@ function submit() {
           empty-title="No users yet" empty-message="Add a user to grant access." @row-click="openEdit">
           <template #cell-full_name="{ row }">
             <div class="flex items-center gap-2.5"><InitialsAvatar :name="row.full_name" :size="30" />
-              <div><div class="font-medium">{{ row.full_name }}</div><div class="text-[11.5px] text-ink-gray-5">{{ row.email }}</div></div></div>
+              <div><div class="font-medium">{{ row.full_name }}</div><div class="text-xs text-ink-gray-5">{{ row.email }}</div></div></div>
           </template>
           <template #cell-roles="{ row }">
             <div class="flex flex-wrap gap-1">
               <StatusBadge v-for="role in row.roles" :key="role" tone="accent" size="sm" :label="role" />
-              <span v-if="!row.roles.length" class="text-[12px] text-ink-gray-4">Employee only</span>
+              <span v-if="!row.roles.length" class="text-xs text-ink-gray-4">Employee only</span>
             </div>
           </template>
           <template #cell-employee="{ row }"><span class="text-ink-gray-7">{{ row.employee || "—" }}</span></template>
@@ -89,11 +89,11 @@ function submit() {
           <FormControl type="email" label="Email (login)" v-model="d.email" />
         </template>
         <div>
-          <div class="mb-1.5 text-[12.5px] font-medium text-ink-gray-7">Roles</div>
+          <div class="mb-1.5 text-xs font-medium text-ink-gray-7">Roles</div>
           <div class="flex flex-col gap-2 rounded-md border border-outline-gray-1 p-3">
             <Checkbox v-for="role in assignable" :key="role" :model-value="d.roles.includes(role)" :label="role" @update:model-value="toggleRole(role)" />
           </div>
-          <p class="mt-1.5 text-[11.5px] text-ink-gray-4">Employee self-service access comes from linking an Employee record to this user.</p>
+          <p class="mt-1.5 text-xs text-ink-gray-4">Employee self-service access comes from linking an Employee record to this user.</p>
         </div>
         <Checkbox v-if="d.mode === 'edit'" v-model="d.enabled" label="Account enabled" />
       </div>

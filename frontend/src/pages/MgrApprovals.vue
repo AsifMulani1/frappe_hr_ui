@@ -50,8 +50,8 @@ function act(item, a) {
             class="flex cursor-pointer items-center gap-3 px-4 py-3.5" :class="[i < items.length - 1 ? 'border-b border-outline-gray-1' : '', cur && cur.id === a.id ? 'bg-blue-50' : '']">
             <div class="flex h-[34px] w-[34px] items-center justify-center rounded-md bg-surface-gray-2 text-ink-gray-7"><Icon :name="a.icon" :size="16" /></div>
             <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2"><span class="text-[13.5px] font-medium text-ink-gray-9">{{ a.person }}</span><StatusBadge :tone="a.tone" size="sm" :label="a.kind" /></div>
-              <div class="mt-0.5 text-[12.5px] text-ink-gray-7">{{ a.detail }} · <span class="tnum font-medium text-ink-gray-9">{{ a.amount }}</span></div>
+              <div class="flex items-center gap-2"><span class="text-sm font-medium text-ink-gray-9">{{ a.person }}</span><StatusBadge :tone="a.tone" size="sm" :label="a.kind" /></div>
+              <div class="mt-0.5 text-xs text-ink-gray-7">{{ a.detail }} · <span class="tnum font-medium text-ink-gray-9">{{ a.amount }}</span></div>
             </div>
             <div class="flex gap-1.5" @click.stop>
               <Button variant="outline" theme="gray" size="sm" icon="x" @click="act(a, 'reject')" />
@@ -63,7 +63,7 @@ function act(item, a) {
       <Card v-if="cur">
         <div class="mb-4 flex items-center gap-3">
           <InitialsAvatar :name="cur.person" :size="44" />
-          <div><div class="text-[15px] font-medium text-ink-gray-9">{{ cur.person }}</div><div class="tnum text-[12.5px] text-ink-gray-5">{{ cur.pid }}</div></div>
+          <div><div class="text-md font-medium text-ink-gray-9">{{ cur.person }}</div><div class="tnum text-xs text-ink-gray-5">{{ cur.pid }}</div></div>
         </div>
         <div class="mb-4 flex flex-col gap-0.5">
           <AmountRow label="Request type" :value="cur.kind" />

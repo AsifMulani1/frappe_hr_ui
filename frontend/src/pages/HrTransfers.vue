@@ -50,8 +50,8 @@ function submitMove() {
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Transfers & promotions" subtitle="Internal movements and role changes">
-      <template #actions><Button variant="solid" theme="blue" label="New movement" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+    <PageHeader title="Transfers & Promotions" subtitle="Internal movements and role changes">
+      <template #actions><Button variant="solid" theme="blue" label="New Movement" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading movements…">
     <Card class="!p-4">
@@ -64,8 +64,8 @@ function submitMove() {
     </Card>
     </AsyncShell>
 
-    <FormDrawer :open="add.open" title="New movement" subtitle="Record a transfer or promotion"
-      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Record movement"
+    <FormDrawer :open="add.open" title="New Movement" subtitle="Record a transfer or promotion"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Record Movement"
       @close="add.open = false" @submit="submitMove" />
   </div>
 </template>

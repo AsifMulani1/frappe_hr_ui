@@ -11,7 +11,7 @@ const TONE = { high: "red", medium: "orange", low: "gray" }
 
 <template>
   <Card>
-    <CardHeader title="Needs your attention" :sub="`${tasks.length} pending`" icon="inbox" />
+    <CardHeader title="Needs Your Attention" :sub="`${tasks.length} pending`" icon="inbox" />
     <div v-if="tasks.length" class="flex flex-col">
       <div
         v-for="(t, i) in tasks"
@@ -23,15 +23,15 @@ const TONE = { high: "red", medium: "orange", low: "gray" }
           <Icon :name="t.kind" :size="16" />
         </div>
         <div class="min-w-0 flex-1">
-          <div class="text-[13.5px] font-medium text-ink-gray-9">{{ t.title }}</div>
-          <div class="mt-px text-[12px] text-ink-gray-5">{{ t.due }}</div>
+          <div class="text-sm font-medium text-ink-gray-9">{{ t.title }}</div>
+          <div class="mt-px text-xs text-ink-gray-5">{{ t.due }}</div>
         </div>
         <Badge variant="subtle" :theme="TONE[t.priority] || 'gray'" size="sm" :label="t.priority" />
       </div>
     </div>
     <div v-else class="flex flex-col items-center gap-1.5 py-7 text-center">
       <Icon name="check" :size="22" class="text-green-500" />
-      <div class="text-[13px] text-ink-gray-5">You're all caught up.</div>
+      <div class="text-sm text-ink-gray-5">You're all caught up.</div>
     </div>
   </Card>
 </template>

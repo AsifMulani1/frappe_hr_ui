@@ -26,13 +26,13 @@ const router = useRouter()
         :class="i ? 'border-t border-outline-gray-1' : ''"
       >
         <div class="mb-1 flex items-center gap-2">
-          <span class="text-[11.5px] text-ink-gray-5">{{ a.by }}</span>
-          <span class="ml-auto text-[11.5px] text-ink-gray-5">{{ a.time }}</span>
+          <span class="text-xs text-ink-gray-5">{{ a.by }}</span>
+          <span class="ml-auto text-xs text-ink-gray-5">{{ a.time }}</span>
         </div>
-        <div class="text-[13.5px] font-medium text-ink-gray-9">{{ a.title }}</div>
-        <div class="mt-0.5 line-clamp-2 text-[12.5px] leading-relaxed text-ink-gray-6">{{ a.excerpt }}</div>
+        <div class="text-sm font-medium text-ink-gray-9">{{ a.title }}</div>
+        <div class="mt-0.5 line-clamp-2 text-xs leading-relaxed text-ink-gray-6">{{ a.excerpt }}</div>
       </div>
     </div>
-    <div v-else class="py-4 text-center text-[13px] text-ink-gray-5">No announcements.</div>
+    <div v-else class="py-4 text-center text-sm text-ink-gray-5">No announcements.</div>
   </Card>
 </template>

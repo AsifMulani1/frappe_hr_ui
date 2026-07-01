@@ -101,12 +101,12 @@ onUnmounted(() => document.removeEventListener("keydown", onGlobalKey))
             v-model="query"
             type="text"
             placeholder="Search screens…"
-            class="h-12 flex-1 border-none bg-transparent text-[14px] text-ink-gray-9 shadow-none outline-none ring-0 focus:border-none focus:shadow-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 placeholder:text-ink-gray-4"
+            class="h-12 flex-1 border-none bg-transparent text-base text-ink-gray-9 shadow-none outline-none ring-0 focus:border-none focus:shadow-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 placeholder:text-ink-gray-4"
             @keydown.down.prevent="move(1)"
             @keydown.up.prevent="move(-1)"
             @keydown.enter.prevent="go(results[active])"
           />
-          <kbd class="rounded border border-outline-gray-2 bg-surface-gray-1 px-1.5 py-0.5 font-mono text-[11px] text-ink-gray-5">esc</kbd>
+          <kbd class="rounded border border-outline-gray-2 bg-surface-gray-1 px-1.5 py-0.5 font-mono text-2xs text-ink-gray-5">esc</kbd>
         </div>
 
         <!-- results -->
@@ -126,12 +126,12 @@ onUnmounted(() => document.removeEventListener("keydown", onGlobalKey))
                 <Icon :name="it.icon" :size="15" />
               </div>
             </template>
-            <span class="flex-1 truncate text-[13.5px] text-ink-gray-9">{{ it.label }}</span>
+            <span class="flex-1 truncate text-sm text-ink-gray-9">{{ it.label }}</span>
             <template #suffix>
-              <span class="shrink-0 text-[11px] text-ink-gray-5">{{ it.group ? `${it.roleLabel} · ${it.group}` : it.roleLabel }}</span>
+              <span class="shrink-0 text-2xs text-ink-gray-5">{{ it.group ? `${it.roleLabel} · ${it.group}` : it.roleLabel }}</span>
             </template>
           </Button>
-          <div v-if="!results.length" class="px-3 py-8 text-center text-[13px] text-ink-gray-5">
+          <div v-if="!results.length" class="px-3 py-8 text-center text-sm text-ink-gray-5">
             No screens match “{{ query }}”.
           </div>
         </div>

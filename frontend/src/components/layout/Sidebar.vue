@@ -58,8 +58,8 @@ function isActive(item) {
         >
           <template #prefix><BrandLogo :size="26" class="shrink-0" /></template>
           <span v-if="!collapsed" class="min-w-0 flex-1 text-left leading-tight">
-            <span class="block truncate text-[13px] font-medium text-ink-gray-9">Frappe HR</span>
-            <span class="block truncate text-[11px] text-ink-gray-5">{{ currentRole?.label }}</span>
+            <span class="block truncate text-sm font-medium text-ink-gray-9">Frappe HR</span>
+            <span class="block truncate text-2xs text-ink-gray-5">{{ currentRole?.label }}</span>
           </span>
           <template v-if="!collapsed" #suffix><Icon name="chevUpDown" :size="15" class="text-ink-gray-5" /></template>
         </Button>
@@ -74,10 +74,10 @@ function isActive(item) {
         @click="ui.openSearch()"
       >
         <template #prefix><Icon name="search" :size="14" /></template>
-        <span class="flex-1 text-left text-[13px]">Search</span>
+        <span class="flex-1 text-left text-sm">Search</span>
         <template #suffix>
           <kbd
-            class="rounded border border-outline-gray-1 bg-surface-white px-1 font-mono text-[11px] text-ink-gray-5"
+            class="rounded border border-outline-gray-1 bg-surface-white px-1 font-mono text-2xs text-ink-gray-5"
             >⌘K</kbd
           >
         </template>
@@ -120,7 +120,7 @@ function isActive(item) {
           <span v-if="!collapsed" class="flex-1 truncate text-left">{{ it.label }}</span>
           <template v-if="!collapsed && it.badge" #suffix>
             <span
-              class="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-surface-gray-3 px-1.5 text-[11px] font-medium text-ink-gray-7"
+              class="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-surface-gray-3 px-1.5 text-2xs font-medium text-ink-gray-7"
               >{{ it.badge }}</span
             >
           </template>
@@ -132,7 +132,7 @@ function isActive(item) {
         <div v-for="(g, gi) in cfg.groups" :key="gi" :class="g.label ? 'mb-2' : 'mb-px'">
           <div
             v-if="g.label && !collapsed"
-            class="px-2 pb-1 pt-2.5 text-[11px] tracking-[.01em] text-ink-gray-5"
+            class="px-2 pb-1 pt-2.5 text-2xs tracking-[.01em] text-ink-gray-5"
           >
             {{ g.label }}
           </div>
@@ -191,7 +191,7 @@ function isActive(item) {
       >
         <template v-if="collapsed" #icon><Icon name="chevRight" :size="18" /></template>
         <template v-else #prefix><Icon name="chevLeft" :size="18" /></template>
-        <span v-if="!collapsed" class="text-[13px]">Collapse</span>
+        <span v-if="!collapsed" class="text-sm">Collapse</span>
       </Button>
     </div>
   </aside>

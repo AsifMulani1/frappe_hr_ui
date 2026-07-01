@@ -20,7 +20,7 @@ const ACTIONS = [
 
 <template>
   <Card>
-    <CardHeader title="Quick actions" />
+    <CardHeader title="Quick Actions" />
     <div class="grid grid-cols-3 gap-2.5">
       <Button
         v-for="a in ACTIONS"

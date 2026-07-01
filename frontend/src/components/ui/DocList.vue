@@ -74,7 +74,7 @@ const DOCSTATUS = { 0: ["Draft", "neutral"], 1: ["Submitted", "success"], 2: ["C
       <div class="border-b border-outline-gray-1 p-3">
         <div class="flex h-[34px] items-center gap-1.5 rounded-md bg-surface-gray-2 px-2.5 text-ink-gray-5">
           <Icon name="search" :size="14" />
-          <input v-model="q" placeholder="Search…" class="h-full flex-1 border-none bg-transparent text-[13px] text-ink-gray-9 outline-none ring-0 focus:outline-none focus:ring-0 placeholder:text-ink-gray-4" />
+          <input v-model="q" placeholder="Search…" class="h-full flex-1 border-none bg-transparent text-sm text-ink-gray-9 outline-none ring-0 focus:outline-none focus:ring-0 placeholder:text-ink-gray-4" />
         </div>
       </div>
       <div class="p-3">
@@ -85,7 +85,7 @@ const DOCSTATUS = { 0: ["Draft", "neutral"], 1: ["Submitted", "success"], 2: ["C
             <StatusBadge :tone="DOCSTATUS[row.docstatus]?.[1] || 'neutral'" size="sm" dot :label="DOCSTATUS[row.docstatus]?.[0] || '—'" />
           </template>
         </DataTable>
-        <div v-if="rows.length || start" class="mt-3 flex items-center justify-between text-[12.5px] text-ink-gray-5">
+        <div v-if="rows.length || start" class="mt-3 flex items-center justify-between text-xs text-ink-gray-5">
           <Button variant="ghost" size="sm" label="Previous" :disabled="!start" @click="start = Math.max(0, start - PAGE); fetchList()" />
           <span>Showing {{ start + 1 }}–{{ start + rows.length }}</span>
           <Button variant="ghost" size="sm" label="Next" :disabled="!list.data?.has_more" @click="start += PAGE; fetchList()" />

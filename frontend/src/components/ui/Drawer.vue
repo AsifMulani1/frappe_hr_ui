@@ -34,8 +34,8 @@ onUnmounted(() => document.removeEventListener("keydown", onKey))
         <div class="flex items-start justify-between gap-3 border-b border-outline-gray-1 px-5 py-4">
           <slot name="head">
             <div>
-              <div class="text-[15.5px] font-medium text-ink-gray-9">{{ title }}</div>
-              <div v-if="subtitle" class="mt-0.5 text-[12.5px] text-ink-gray-5">{{ subtitle }}</div>
+              <div class="text-md font-medium text-ink-gray-9">{{ title }}</div>
+              <div v-if="subtitle" class="mt-0.5 text-xs text-ink-gray-5">{{ subtitle }}</div>
             </div>
           </slot>
           <Button variant="ghost" label="Close" @click="emit('close')">

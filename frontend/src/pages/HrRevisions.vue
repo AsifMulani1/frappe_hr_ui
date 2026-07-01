@@ -45,8 +45,8 @@ const columns = [
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Revisions & arrears" subtitle="Salary changes and structure assignments">
-      <template #actions><Button variant="solid" theme="blue" label="New revision" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+    <PageHeader title="Revisions & Arrears" subtitle="Salary changes and structure assignments">
+      <template #actions><Button variant="solid" theme="blue" label="New Revision" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading revisions…">
     <Card class="!p-4">
@@ -59,8 +59,8 @@ const columns = [
     </Card>
     </AsyncShell>
 
-    <FormDrawer :open="add.open" title="New revision" subtitle="Assign a salary structure"
-      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Create revision"
+    <FormDrawer :open="add.open" title="New Revision" subtitle="Assign a salary structure"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Create Revision"
       @close="add.open = false" @submit="add.submit(form, ['employee', 'salary_structure', 'from_date'])" />
   </div>
 </template>

@@ -46,7 +46,7 @@ const showEmpty = computed(() => !props.loading && !props.rows.length)
       :rows="rows"
       :row-key="rowKey"
       :options="options"
-      class="!overflow-visible px-2 text-[13.5px]"
+      class="!overflow-visible px-2 text-sm"
     >
       <template #cell="{ column, row, item }">
         <slot :name="`cell-${column.key}`" :row="row" :value="item" :index="indexOf(row)">
@@ -55,6 +55,6 @@ const showEmpty = computed(() => !props.loading && !props.rows.length)
       </template>
     </ListView>
     <EmptyState v-else :title="emptyTitle" :message="emptyMessage" compact />
-    <div v-if="loading" class="p-8 text-center text-[13px] text-ink-gray-5">Loading…</div>
+    <div v-if="loading" class="p-8 text-center text-sm text-ink-gray-5">Loading…</div>
   </div>
 </template>

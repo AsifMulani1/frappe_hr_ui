@@ -50,8 +50,8 @@ function submitFeedback() {
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Interview scheduling" :subtitle="`${items.length} interviews`">
-      <template #actions><Button variant="solid" theme="blue" label="Schedule interview" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+    <PageHeader title="Interview Scheduling" :subtitle="`${items.length} interviews`">
+      <template #actions><Button variant="solid" theme="blue" label="Schedule Interview" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading interviews…">
     <Card :pad="false">
@@ -60,7 +60,7 @@ function submitFeedback() {
       <div v-else class="flex flex-col">
         <div v-for="(iv, i) in items" :key="i" class="flex items-center gap-4 px-5 py-4" :class="i < items.length - 1 ? 'border-b border-outline-gray-1' : ''">
           <InitialsAvatar :name="iv.cand" :size="36" />
-          <div class="flex-1"><div class="text-[14px] font-medium text-ink-gray-9">{{ iv.cand }}</div><div class="text-[12.5px] text-ink-gray-7">{{ iv.round }} · {{ iv.when }}</div></div>
+          <div class="flex-1"><div class="text-base font-medium text-ink-gray-9">{{ iv.cand }}</div><div class="text-xs text-ink-gray-7">{{ iv.round }} · {{ iv.when }}</div></div>
           <StatusBadge :tone="iv.status === 'Cleared' ? 'success' : 'neutral'" size="sm" :label="iv.status" />
           <Button variant="outline" theme="gray" size="sm" label="Feedback" @click="openFeedback(iv)" />
         </div>
@@ -68,18 +68,18 @@ function submitFeedback() {
     </Card>
     </AsyncShell>
 
-    <FormDrawer :open="add.open" title="Schedule interview" subtitle="Set up an interview round"
+    <FormDrawer :open="add.open" title="Schedule Interview" subtitle="Set up an interview round"
       :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Schedule"
       @close="add.open = false" @submit="add.submit(form, ['job_applicant', 'interview_type', 'scheduled_on', 'from_time', 'to_time'])" />
 
-    <Drawer :open="fb.open" title="Interview feedback" :subtitle="fb.cand" :width="440" @close="fb.open = false">
+    <Drawer :open="fb.open" title="Interview Feedback" :subtitle="fb.cand" :width="440" @close="fb.open = false">
       <div class="flex flex-col gap-4">
         <FormControl type="select" label="Result" :options="['Cleared', 'Rejected', 'Under Review']" v-model="fb.result" />
         <FormControl type="textarea" label="Notes" placeholder="Summary of the round…" v-model="fb.note" />
       </div>
       <template #footer>
         <Button variant="ghost" label="Cancel" @click="fb.open = false" />
-        <Button variant="solid" theme="blue" label="Save feedback" :loading="feedback.loading" @click="submitFeedback" />
+        <Button variant="solid" theme="blue" label="Save Feedback" :loading="feedback.loading" @click="submitFeedback" />
       </template>
     </Drawer>
   </div>

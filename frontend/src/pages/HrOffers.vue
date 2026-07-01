@@ -46,8 +46,8 @@ const columns = [
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Offer management" :subtitle="`${(d.offers || []).length} offers`">
-      <template #actions><Button variant="solid" theme="blue" label="Create offer" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+    <PageHeader title="Offer Management" :subtitle="`${(d.offers || []).length} offers`">
+      <template #actions><Button variant="solid" theme="blue" label="Create Offer" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading offers…">
     <StatTiles :items="tiles" :cols="4" />
@@ -61,8 +61,8 @@ const columns = [
     </Card>
     </AsyncShell>
 
-    <FormDrawer :open="add.open" title="Create offer" subtitle="Send a job offer to an applicant"
-      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Create offer"
+    <FormDrawer :open="add.open" title="Create Offer" subtitle="Send a job offer to an applicant"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Create Offer"
       @close="add.open = false" @submit="add.submit(form, ['job_applicant', 'designation', 'offer_date'])" />
   </div>
 </template>

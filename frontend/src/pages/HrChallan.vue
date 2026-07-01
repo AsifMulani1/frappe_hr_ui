@@ -26,8 +26,8 @@ const columns = [
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Challan & returns" subtitle="All statutory challans and filing references in one place">
-      <template #actions><Button variant="solid" theme="blue" label="Generate challan" @click="reportOpen = true"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+    <PageHeader title="Challan & Returns" subtitle="All statutory challans and filing references in one place">
+      <template #actions><Button variant="solid" theme="blue" label="Generate Challan" @click="reportOpen = true"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading challans…">
     <Card class="!p-4">
@@ -42,6 +42,6 @@ const columns = [
     </Card>
     </AsyncShell>
 
-    <ReportDrawer :open="reportOpen" report="Salary Register" title="Statutory deductions" @close="reportOpen = false" />
+    <ReportDrawer :open="reportOpen" report="Salary Register" title="Statutory Deductions" @close="reportOpen = false" />
   </div>
 </template>

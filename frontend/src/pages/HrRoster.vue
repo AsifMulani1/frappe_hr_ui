@@ -31,22 +31,22 @@ function openAdd() {
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Shift & roster" subtitle="Plan and assign shifts">
-      <template #actions><Button variant="solid" theme="blue" label="Assign shift" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+    <PageHeader title="Shift & Roster" subtitle="Plan and assign shifts">
+      <template #actions><Button variant="solid" theme="blue" label="Assign Shift" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading roster…">
     <div v-if="shifts.length" class="mb-5 grid grid-cols-4 gap-5">
       <Card v-for="(s, i) in shifts" :key="s.name" class="!p-4">
-        <div class="mb-2 flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-[3px]" :style="{ background: COLORS[i % 4] }" /><span class="text-[13.5px] font-medium">{{ s.name }}</span></div>
-        <div class="tnum text-[12.5px] text-ink-gray-5">{{ s.time }}</div>
-        <div class="tnum mt-2 text-[22px] font-medium">{{ s.emp }}<span class="text-[12px] font-normal text-ink-gray-5"> assigned</span></div>
+        <div class="mb-2 flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-[3px]" :style="{ background: COLORS[i % 4] }" /><span class="text-sm font-medium">{{ s.name }}</span></div>
+        <div class="tnum text-xs text-ink-gray-5">{{ s.time }}</div>
+        <div class="tnum mt-2 text-3xl font-medium">{{ s.emp }}<span class="text-xs font-normal text-ink-gray-5"> assigned</span></div>
       </Card>
     </div>
     <Card v-else><EmptyState icon="calendar" title="No shift types defined" message="Create shift types to plan rosters." compact /></Card>
     </AsyncShell>
 
-    <FormDrawer :open="add.open" title="Assign shift" subtitle="Assign a shift to an employee"
-      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Assign shift"
+    <FormDrawer :open="add.open" title="Assign Shift" subtitle="Assign a shift to an employee"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Assign Shift"
       @close="add.open = false" @submit="add.submit(form, ['employee', 'shift_type', 'start_date'])" />
   </div>
 </template>

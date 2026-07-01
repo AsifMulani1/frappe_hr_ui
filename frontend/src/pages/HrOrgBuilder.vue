@@ -29,16 +29,16 @@ function openAdd() {
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Org chart builder" subtitle="Company reporting structure">
-      <template #actions><Button variant="solid" theme="blue" label="Add department" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+    <PageHeader title="Org Chart Builder" subtitle="Company reporting structure">
+      <template #actions><Button variant="solid" theme="blue" label="Add Department" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading org chart…">
     <Card class="overflow-x-auto !p-10">
       <div class="flex min-w-[760px] flex-col items-center">
         <Card v-if="d.top" class="min-w-[190px] text-center !border-blue-100 !bg-blue-50 !px-4 !py-3">
           <div class="mb-2 flex justify-center"><InitialsAvatar :name="d.top.employee_name" :size="42" /></div>
-          <div class="text-[14px] font-medium text-ink-gray-9">{{ d.top.employee_name }}</div>
-          <div class="text-[11.5px] text-ink-gray-7">{{ d.top.designation }}</div>
+          <div class="text-base font-medium text-ink-gray-9">{{ d.top.employee_name }}</div>
+          <div class="text-xs text-ink-gray-7">{{ d.top.designation }}</div>
         </Card>
         <div v-if="(d.heads || []).length" class="h-6 w-0.5 bg-outline-gray-2" />
         <div v-if="(d.heads || []).length" class="relative flex flex-wrap justify-center gap-5">
@@ -47,8 +47,8 @@ function openAdd() {
             <div class="h-6 w-0.5 bg-outline-gray-2" />
             <Card hover class="min-w-[140px] cursor-pointer text-center !px-3.5 !py-3">
               <div class="mb-1.5 flex justify-center"><InitialsAvatar :name="h.name" :size="34" /></div>
-              <div class="text-[12.5px] font-medium text-ink-gray-9">{{ h.name }}</div>
-              <div class="text-[11px] text-ink-gray-5">{{ h.dept }}</div>
+              <div class="text-xs font-medium text-ink-gray-9">{{ h.name }}</div>
+              <div class="text-2xs text-ink-gray-5">{{ h.dept }}</div>
               <div class="mt-1.5"><StatusBadge tone="neutral" size="sm" :label="`${h.reports} reports`" /></div>
             </Card>
           </div>
@@ -57,8 +57,8 @@ function openAdd() {
     </Card>
     </AsyncShell>
 
-    <FormDrawer :open="add.open" title="Add department" subtitle="Add a team to the reporting structure"
-      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Add department"
+    <FormDrawer :open="add.open" title="Add Department" subtitle="Add a team to the reporting structure"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Add Department"
       @close="add.open = false" @submit="add.submit(form, ['department_name'])" />
   </div>
 </template>

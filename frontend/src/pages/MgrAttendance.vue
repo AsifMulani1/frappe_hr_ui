@@ -41,7 +41,7 @@ const exportColumns = [
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Team attendance" subtitle="Live status and month trends for your reports">
+    <PageHeader title="Team Attendance" subtitle="Live status and month trends for your reports">
       <template #actions><Button variant="outline" theme="gray" label="Export" @click="downloadCSV('team-attendance', exportColumns, d.team || [])"><template #prefix><Icon name="download" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading team attendance…">
@@ -52,7 +52,7 @@ const exportColumns = [
         <DataTable :columns="columns" :rows="d.team || []" row-key="name" :loading="r.loading">
           <template #cell-employee_name="{ row }">
             <div class="flex items-center gap-2.5"><InitialsAvatar :name="row.employee_name" :size="30" />
-              <div><div class="font-medium">{{ row.employee_name }}</div><div class="text-[11.5px] text-ink-gray-5">{{ row.designation }}</div></div></div>
+              <div><div class="font-medium">{{ row.employee_name }}</div><div class="text-xs text-ink-gray-5">{{ row.designation }}</div></div></div>
           </template>
           <template #cell-att="{ row }"><StatusBadge :tone="ATT_TONE[row.today.att] || 'neutral'" size="sm" dot :label="row.today.att" /></template>
           <template #cell-in="{ row }"><span class="tnum">{{ row.today.in }}</span></template>
