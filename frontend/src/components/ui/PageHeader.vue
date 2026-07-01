@@ -1,4 +1,5 @@
 <script setup>
+import { Button } from "frappe-ui"
 import Icon from "./Icon.vue"
 defineProps({
   title: String,
@@ -10,13 +11,15 @@ const emit = defineEmits(["back"])
 
 <template>
   <div class="mb-[18px]">
-    <button
+    <Button
       v-if="back"
-      class="mb-2 inline-flex items-center gap-1.5 border-0 bg-transparent p-0 text-[12.5px] text-ink-gray-5 hover:text-ink-gray-7"
+      class="mb-2"
+      variant="ghost"
+      :label="back"
       @click="emit('back')"
     >
-      <Icon name="chevLeft" :size="14" /> {{ back }}
-    </button>
+      <template #prefix><Icon name="chevLeft" :size="14" /></template>
+    </Button>
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1 class="text-[21px] font-medium tracking-tight text-ink-gray-9">{{ title }}</h1>

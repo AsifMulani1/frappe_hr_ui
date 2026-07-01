@@ -169,7 +169,7 @@ function submitForm() {
             <DateField v-else-if="c.fieldtype === 'Date'" v-model="row[c.fieldname]" />
             <TextInput v-else :type="inputType(c.fieldtype)" v-model="row[c.fieldname]" size="md" />
           </div>
-          <button class="mb-px flex h-8 w-[28px] shrink-0 items-center justify-center rounded text-ink-gray-5 hover:bg-surface-gray-2" @click="removeRow(tf, i)"><Icon name="x" :size="14" /></button>
+          <Button variant="ghost" size="sm" label="Remove row" class="mb-px shrink-0" @click="removeRow(tf, i)"><template #icon><Icon name="x" :size="14" /></template></Button>
         </div>
       </div>
 

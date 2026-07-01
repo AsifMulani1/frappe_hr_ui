@@ -159,13 +159,15 @@ watch(step, (n) => {
     <!-- stepper -->
     <div class="mb-5 flex flex-wrap items-center gap-2">
       <template v-for="(label, i) in STEPS" :key="i">
-        <button class="flex items-center gap-2" @click="step = i + 1">
-          <div class="flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-medium"
-            :class="step > i + 1 ? 'bg-blue-600 text-white' : step === i + 1 ? 'bg-blue-100 text-blue-700' : 'bg-surface-gray-2 text-ink-gray-5'">
-            <Icon v-if="step > i + 1" name="check" :size="13" /><span v-else>{{ i + 1 }}</span>
+        <Button variant="ghost" @click="step = i + 1">
+          <div class="flex items-center gap-2">
+            <div class="flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-medium"
+              :class="step > i + 1 ? 'bg-blue-600 text-white' : step === i + 1 ? 'bg-blue-100 text-blue-700' : 'bg-surface-gray-2 text-ink-gray-5'">
+              <Icon v-if="step > i + 1" name="check" :size="13" /><span v-else>{{ i + 1 }}</span>
+            </div>
+            <span class="text-[12.5px]" :class="step === i + 1 ? 'font-medium text-ink-gray-9' : 'text-ink-gray-5'">{{ label }}</span>
           </div>
-          <span class="text-[12.5px]" :class="step === i + 1 ? 'font-medium text-ink-gray-9' : 'text-ink-gray-5'">{{ label }}</span>
-        </button>
+        </Button>
         <div v-if="i < STEPS.length - 1" class="h-px w-5 bg-outline-gray-2" />
       </template>
     </div>

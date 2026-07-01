@@ -50,14 +50,16 @@ const maxFunnel = computed(() => Math.max(1, ...(d.value.funnel || []).map((x) =
               <template #action><Button variant="ghost" size="sm" label="All jobs" @click="router.push({ name: 'HrJobs' }).catch(() => {})" /></template>
             </CardHeader>
             <div v-if="(d.open_positions || []).length" class="flex flex-col">
-              <button v-for="j in d.open_positions" :key="j.name" @click="router.push({ name: 'HrPipeline' }).catch(() => {})"
-                class="flex items-center gap-3 border-t border-outline-gray-1 py-2.5 text-left first:border-t-0">
-                <div class="min-w-0 flex-1">
-                  <div class="truncate text-[13px] font-medium text-ink-gray-9">{{ j.job_title || j.designation || j.name }}</div>
-                  <div class="text-[11.5px] text-ink-gray-5">{{ j.dept || "—" }}</div>
+              <Button v-for="j in d.open_positions" :key="j.name" variant="ghost" @click="router.push({ name: 'HrPipeline' }).catch(() => {})"
+                class="w-full !justify-start border-t border-outline-gray-1 text-left first:border-t-0">
+                <div class="flex w-full items-center gap-3">
+                  <div class="min-w-0 flex-1">
+                    <div class="truncate text-[13px] font-medium text-ink-gray-9">{{ j.job_title || j.designation || j.name }}</div>
+                    <div class="text-[11.5px] text-ink-gray-5">{{ j.dept || "—" }}</div>
+                  </div>
+                  <span class="tnum rounded-full bg-surface-gray-2 px-2 py-0.5 text-[11.5px] font-medium text-ink-gray-7">{{ j.apps }} applicants</span>
                 </div>
-                <span class="tnum rounded-full bg-surface-gray-2 px-2 py-0.5 text-[11.5px] font-medium text-ink-gray-7">{{ j.apps }} applicants</span>
-              </button>
+              </Button>
             </div>
             <EmptyState v-else icon="briefcase" title="No open positions" compact />
           </Card>

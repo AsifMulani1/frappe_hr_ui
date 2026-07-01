@@ -1,5 +1,6 @@
 <script setup>
 import { watch, onUnmounted } from "vue"
+import { Button } from "frappe-ui"
 import Icon from "./Icon.vue"
 const props = defineProps({
   open: Boolean,
@@ -37,9 +38,9 @@ onUnmounted(() => document.removeEventListener("keydown", onKey))
               <div v-if="subtitle" class="mt-0.5 text-[12.5px] text-ink-gray-5">{{ subtitle }}</div>
             </div>
           </slot>
-          <button type="button" aria-label="Close" class="flex h-8 w-8 items-center justify-center rounded-md text-ink-gray-6 hover:bg-surface-gray-2" @click="emit('close')">
-            <Icon name="x" :size="18" />
-          </button>
+          <Button variant="ghost" label="Close" @click="emit('close')">
+            <template #icon><Icon name="x" :size="18" /></template>
+          </Button>
         </div>
         <div class="flex-1 overflow-y-auto p-5"><slot /></div>
         <div v-if="$slots.footer" class="flex justify-end gap-2 border-t border-outline-gray-1 bg-surface-gray-1 px-5 py-3.5">

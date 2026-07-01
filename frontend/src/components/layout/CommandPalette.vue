@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue"
 import { useRouter } from "vue-router"
+import { Button } from "frappe-ui"
 import Icon from "@/components/ui/Icon.vue"
 import { useUiStore } from "@/stores/ui"
 import { NAV, SETTINGS, ADMIN_ROLES } from "@/data/nav"
@@ -110,21 +111,26 @@ onUnmounted(() => document.removeEventListener("keydown", onGlobalKey))
 
         <!-- results -->
         <div ref="listRef" class="max-h-[52vh] overflow-y-auto p-1.5">
-          <button
+          <Button
             v-for="(it, i) in results"
             :key="it.roleId + it.id"
             :data-idx="i"
-            class="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left"
-            :class="i === active ? 'bg-blue-50' : 'hover:bg-surface-gray-1'"
+            :variant="i === active ? 'subtle' : 'ghost'"
+            theme="gray"
+            class="w-full !justify-start"
             @click="go(it)"
             @mousemove="active = i"
           >
-            <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-gray-2 text-ink-gray-7">
-              <Icon :name="it.icon" :size="15" />
-            </div>
+            <template #prefix>
+              <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-gray-2 text-ink-gray-7">
+                <Icon :name="it.icon" :size="15" />
+              </div>
+            </template>
             <span class="flex-1 truncate text-[13.5px] text-ink-gray-9">{{ it.label }}</span>
-            <span class="shrink-0 text-[11px] text-ink-gray-5">{{ it.group ? `${it.roleLabel} · ${it.group}` : it.roleLabel }}</span>
-          </button>
+            <template #suffix>
+              <span class="shrink-0 text-[11px] text-ink-gray-5">{{ it.group ? `${it.roleLabel} · ${it.group}` : it.roleLabel }}</span>
+            </template>
+          </Button>
           <div v-if="!results.length" class="px-3 py-8 text-center text-[13px] text-ink-gray-5">
             No screens match “{{ query }}”.
           </div>

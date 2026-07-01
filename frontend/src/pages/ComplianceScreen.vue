@@ -68,11 +68,12 @@ function quickLink(label) {
       <Card>
         <CardHeader title="Quick links" />
         <div class="flex flex-col gap-0.5">
-          <button v-for="[ic, t] in [['external', `Open ${d.authority || ''} portal`], ['file', `Download ${d.code || ''} register`], ['calendar', 'Statutory calendar']]" :key="t"
-            @click="quickLink(t)"
-            class="flex items-center gap-2.5 rounded-md px-2 py-2 text-left text-ink-gray-7 hover:bg-surface-gray-1">
-            <Icon :name="ic" :size="16" /><span class="flex-1 text-[13px] text-ink-gray-9">{{ t }}</span><Icon name="chevRight" :size="14" class="text-ink-gray-4" />
-          </button>
+          <Button v-for="[ic, t] in [['external', `Open ${d.authority || ''} portal`], ['file', `Download ${d.code || ''} register`], ['calendar', 'Statutory calendar']]" :key="t"
+            variant="ghost" @click="quickLink(t)" class="w-full !justify-start text-left">
+            <div class="flex w-full items-center gap-2.5">
+              <Icon :name="ic" :size="16" /><span class="flex-1 text-[13px] text-ink-gray-9">{{ t }}</span><Icon name="chevRight" :size="14" class="text-ink-gray-4" />
+            </div>
+          </Button>
         </div>
       </Card>
     </div>

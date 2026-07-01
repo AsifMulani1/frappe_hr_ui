@@ -66,16 +66,18 @@ function sendReply() {
     <div v-else class="grid items-start gap-5" style="grid-template-columns: 360px minmax(0,1fr)">
       <Card :pad="false">
         <div class="flex flex-col">
-          <button v-for="(t, i) in tickets" :key="t.name" @click="select(t.name)"
-            class="border-b border-outline-gray-1 px-4 py-3.5 text-left last:border-b-0"
-            :class="active === t.name ? 'border-l-2 border-l-blue-500 bg-blue-50' : ''">
-            <div class="mb-1 flex justify-between">
-              <span class="tnum text-[11.5px] font-medium text-ink-gray-5">{{ t.name }}</span>
-              <StatusBadge :tone="STATUS_TONE[t.status] || 'neutral'" size="sm" dot :label="t.status" />
+          <Button v-for="(t, i) in tickets" :key="t.name" @click="select(t.name)"
+            :variant="active === t.name ? 'subtle' : 'ghost'" theme="gray"
+            class="w-full !justify-start border-b border-outline-gray-1 last:border-b-0">
+            <div class="w-full">
+              <div class="mb-1 flex justify-between">
+                <span class="tnum text-[11.5px] font-medium text-ink-gray-5">{{ t.name }}</span>
+                <StatusBadge :tone="STATUS_TONE[t.status] || 'neutral'" size="sm" dot :label="t.status" />
+              </div>
+              <div class="text-[13.5px] font-medium leading-snug text-ink-gray-9">{{ t.subject }}</div>
+              <div class="mt-1.5 text-[11.5px] text-ink-gray-5">{{ t.updated }}</div>
             </div>
-            <div class="text-[13.5px] font-medium leading-snug text-ink-gray-9">{{ t.subject }}</div>
-            <div class="mt-1.5 text-[11.5px] text-ink-gray-5">{{ t.updated }}</div>
-          </button>
+          </Button>
         </div>
       </Card>
 

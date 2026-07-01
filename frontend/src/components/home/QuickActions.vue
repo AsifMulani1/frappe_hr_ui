@@ -1,5 +1,6 @@
 <script setup>
 import { useRouter } from "vue-router"
+import { Button } from "frappe-ui"
 import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
 import Icon from "@/components/ui/Icon.vue"
@@ -21,17 +22,20 @@ const ACTIONS = [
   <Card>
     <CardHeader title="Quick actions" />
     <div class="grid grid-cols-3 gap-2.5">
-      <button
+      <Button
         v-for="a in ACTIONS"
         :key="a.id"
+        class="w-full !justify-start"
+        variant="ghost"
+        :label="a.label"
         @click="router.push(a.to)"
-        class="flex items-center gap-2.5 rounded-md border border-outline-gray-1 bg-surface-white px-3 py-2.5 text-left transition-colors hover:border-outline-gray-2 hover:bg-surface-gray-1"
       >
-        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600">
-          <Icon :name="a.icon" :size="17" />
-        </div>
-        <span class="text-[13px] font-medium text-ink-gray-9">{{ a.label }}</span>
-      </button>
+        <template #prefix>
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+            <Icon :name="a.icon" :size="17" />
+          </div>
+        </template>
+      </Button>
     </div>
   </Card>
 </template>

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from "vue"
-import { createResource } from "frappe-ui"
+import { Button, createResource } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
 import SectionLabel from "@/components/ui/SectionLabel.vue"
@@ -32,11 +32,11 @@ const leaveCols = [
     <AsyncShell :resource="r" loading-text="Loading settings…">
     <div class="grid items-start gap-5" style="grid-template-columns: 240px minmax(0,1fr)">
       <Card class="!p-2">
-        <button v-for="g in groups" :key="g.id" @click="active = g.id"
-          class="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2.5 text-left text-[13.5px]"
-          :class="active === g.id ? 'bg-blue-50 font-medium text-blue-700' : 'text-ink-gray-7 hover:bg-surface-gray-1'">
-          <Icon :name="g.icon" :size="16" />{{ g.label }}
-        </button>
+        <Button v-for="g in groups" :key="g.id" @click="active = g.id"
+          :variant="active === g.id ? 'subtle' : 'ghost'" theme="gray"
+          class="w-full !justify-start">
+          <template #prefix><Icon :name="g.icon" :size="16" /></template>{{ g.label }}
+        </Button>
       </Card>
       <Card>
         <div v-if="active === 'company'">

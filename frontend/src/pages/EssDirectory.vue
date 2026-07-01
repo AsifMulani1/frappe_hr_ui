@@ -54,9 +54,8 @@ const columns = [
     <AsyncShell :resource="r" loading-text="Loading directory…">
     <Toolbar v-model="q" search="Search by name, team or role…">
       <div class="flex flex-wrap gap-1.5">
-        <button v-for="x in depts.slice(0, 6)" :key="x" @click="dept = x"
-          class="h-[34px] rounded-md border px-3 text-[13px] font-medium"
-          :class="dept === x ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-outline-gray-2 bg-surface-white text-ink-gray-7'">{{ x }}</button>
+        <Button v-for="x in depts.slice(0, 6)" :key="x" @click="dept = x"
+          :variant="dept === x ? 'subtle' : 'ghost'" theme="gray" size="sm">{{ x }}</Button>
       </div>
       <template #right><Segmented :options="[{ id: 'grid', label: 'Grid' }, { id: 'list', label: 'List' }]" v-model="view" /></template>
     </Toolbar>

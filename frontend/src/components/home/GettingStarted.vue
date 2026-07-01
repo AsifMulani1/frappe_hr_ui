@@ -89,7 +89,7 @@ function dismiss() { dismissed.value = true; localStorage.setItem(DISMISS_KEY, "
             : `${doneCount} of ${total} done — finish setting up ${s.company || "your company"}.` }}
         </p>
       </div>
-      <button class="shrink-0 rounded px-2 py-1 text-[12px] text-ink-gray-4 hover:bg-surface-gray-2 hover:text-ink-gray-7" @click="dismiss">Dismiss</button>
+      <Button class="shrink-0" size="sm" variant="ghost" theme="gray" label="Dismiss" @click="dismiss" />
     </div>
 
     <!-- progress -->

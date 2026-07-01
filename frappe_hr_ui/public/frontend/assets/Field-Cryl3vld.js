@@ -1,2 +1,0 @@
-import{k as l,q as s,s as t,E as a,D as n}from"./frappe-ui-BfpZTs70.js";const o={class:"mb-[3px] text-[12px] text-ink-gray-5"},i={class:"text-[13.5px] font-medium text-ink-gray-9"},u={__name:"Field",props:{label:String,value:[String,Number],full:Boolean},setup(e){return(c,r)=>(l(),s("div",{class:n(e.full?"col-span-full":"")},[t("div",o,a(e.label),1),t("div",i,a(e.value||"—"),1)],2))}};export{u as _};
-//# sourceMappingURL=Field-Cryl3vld.js.map

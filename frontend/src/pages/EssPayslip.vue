@@ -35,15 +35,17 @@ const det = computed(() => detail.data || {})
       <Card :pad="false" class="p-2">
         <div class="px-2.5 py-2 text-[12px] font-medium text-ink-gray-5">All payslips</div>
         <div class="flex flex-col gap-0.5">
-          <button v-for="s in slips" :key="s.name" @click="select(s.name)"
-            class="flex items-center justify-between rounded-md px-3 py-2.5 text-left transition-colors"
-            :class="sel === s.name ? 'bg-blue-50' : 'hover:bg-surface-gray-1'">
-            <div>
-              <div class="text-[13.5px] font-medium" :class="sel === s.name ? 'text-blue-700' : 'text-ink-gray-9'">{{ s.month }}</div>
-              <div class="tnum text-[11.5px] text-ink-gray-5">{{ formatINR(s.net_pay) }} net</div>
+          <Button v-for="s in slips" :key="s.name" @click="select(s.name)"
+            :variant="sel === s.name ? 'subtle' : 'ghost'" theme="gray"
+            class="w-full !justify-start">
+            <div class="flex w-full items-center justify-between">
+              <div>
+                <div class="text-[13.5px] font-medium" :class="sel === s.name ? 'text-blue-700' : 'text-ink-gray-9'">{{ s.month }}</div>
+                <div class="tnum text-[11.5px] text-ink-gray-5">{{ formatINR(s.net_pay) }} net</div>
+              </div>
+              <Icon name="chevRight" :size="15" :class="sel === s.name ? 'text-blue-600' : 'text-ink-gray-4'" />
             </div>
-            <Icon name="chevRight" :size="15" :class="sel === s.name ? 'text-blue-600' : 'text-ink-gray-4'" />
-          </button>
+          </Button>
         </div>
       </Card>
 

@@ -90,9 +90,7 @@ const toggle = createResource({
       <div class="flex flex-col gap-4 p-5">
         <div class="flex items-center justify-between">
           <div class="text-[12.5px] font-medium text-ink-gray-5">This week</div>
-          <button class="border-0 bg-transparent p-0 text-[12.5px] font-medium text-blue-600" @click="router.push('/attendance')">
-            Regularize
-          </button>
+          <Button variant="ghost" size="sm" label="Regularize" @click="router.push('/attendance')" />
         </div>
         <WeekStrip :week="week" />
         <div class="mt-0.5 grid grid-cols-3 gap-3">

@@ -61,12 +61,14 @@ const maxStat = computed(() => Math.max(1, ...(d.value.statutory || []).map((x) 
         <Card>
           <CardHeader title="Action centre" icon="inbox" />
           <div class="flex flex-col">
-            <button v-for="[ti, s, ic, to] in [['Process payroll run', 'Generate slips', 'rupee', 'HrPayrun'], ['Salary structure', 'Earnings & deductions', 'layers', 'HrSalStructure'], ['Bank disbursement', 'Pay out', 'card', 'HrBankfile'], ['Reconciliation', 'Match & verify', 'check', 'HrReconcile'], ['TDS & challan', 'Statutory filing', 'shield', 'ComplianceTds']]" :key="ti"
-              @click="router.push({ name: to }).catch(() => {})" class="flex items-center gap-3 border-t border-outline-gray-1 py-3 text-left first:border-t-0">
-              <div class="flex h-[30px] w-[30px] items-center justify-center rounded-md bg-surface-gray-2 text-ink-gray-7"><Icon :name="ic" :size="15" /></div>
-              <div class="min-w-0 flex-1"><div class="text-[13px] font-medium text-ink-gray-9">{{ ti }}</div><div class="text-[11.5px] text-ink-gray-5">{{ s }}</div></div>
-              <Icon name="chevRight" :size="15" class="text-ink-gray-4" />
-            </button>
+            <Button v-for="[ti, s, ic, to] in [['Process payroll run', 'Generate slips', 'rupee', 'HrPayrun'], ['Salary structure', 'Earnings & deductions', 'layers', 'HrSalStructure'], ['Bank disbursement', 'Pay out', 'card', 'HrBankfile'], ['Reconciliation', 'Match & verify', 'check', 'HrReconcile'], ['TDS & challan', 'Statutory filing', 'shield', 'ComplianceTds']]" :key="ti"
+              variant="ghost" @click="router.push({ name: to }).catch(() => {})" class="w-full !justify-start border-t border-outline-gray-1 text-left first:border-t-0">
+              <div class="flex w-full items-center gap-3">
+                <div class="flex h-[30px] w-[30px] items-center justify-center rounded-md bg-surface-gray-2 text-ink-gray-7"><Icon :name="ic" :size="15" /></div>
+                <div class="min-w-0 flex-1"><div class="text-[13px] font-medium text-ink-gray-9">{{ ti }}</div><div class="text-[11.5px] text-ink-gray-5">{{ s }}</div></div>
+                <Icon name="chevRight" :size="15" class="text-ink-gray-4" />
+              </div>
+            </Button>
           </div>
         </Card>
       </div>
