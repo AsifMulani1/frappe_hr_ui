@@ -25,10 +25,10 @@ watch(
 
 <template>
   <Drawer :open="open" :title="title || name" :subtitle="doctype" :width="460" @close="emit('close')">
-    <div v-if="detail.loading" class="py-10 text-center text-[13px] text-ink-gray-5">Loading…</div>
+    <div v-if="detail.loading" class="py-10 text-center text-sm text-ink-gray-5">Loading…</div>
     <div v-else-if="detail.data" class="flex flex-col">
       <div class="mb-3 flex items-center gap-2">
-        <span class="text-[15px] font-medium text-ink-gray-9">{{ detail.data.title || detail.data.name }}</span>
+        <span class="text-md font-medium text-ink-gray-9">{{ detail.data.title || detail.data.name }}</span>
         <StatusBadge v-if="detail.data.status" tone="neutral" size="sm" :label="String(detail.data.status)" />
       </div>
       <div
@@ -36,10 +36,10 @@ watch(
         :key="i"
         class="flex items-start justify-between gap-4 border-b border-outline-gray-1 py-2.5 last:border-b-0"
       >
-        <span class="text-[12.5px] text-ink-gray-5">{{ f.label }}</span>
-        <span class="text-right text-[13px] font-medium text-ink-gray-9">{{ f.value }}</span>
+        <span class="text-xs text-ink-gray-5">{{ f.label }}</span>
+        <span class="text-right text-sm font-medium text-ink-gray-9">{{ f.value }}</span>
       </div>
     </div>
-    <div v-else class="py-10 text-center text-[13px] text-ink-gray-5">Couldn't load details.</div>
+    <div v-else class="py-10 text-center text-sm text-ink-gray-5">Couldn't load details.</div>
   </Drawer>
 </template>

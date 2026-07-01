@@ -63,20 +63,20 @@ function openExit() {
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader back="Employee directory" title="Employee 360" subtitle="Complete record · HR admin view" @back="router.push({ name: 'HrDirectory' })" />
-    <div v-if="!e.name && !r.loading" class="py-16 text-center text-[13px] text-ink-gray-5">Open an employee from the directory.</div>
+    <div v-if="!e.name && !r.loading" class="py-16 text-center text-sm text-ink-gray-5">Open an employee from the directory.</div>
     <template v-else>
       <Card :pad="false" class="mb-5">
         <div class="flex flex-wrap items-center gap-[18px] p-5">
           <InitialsAvatar :name="e.employee_name" :image="e.image" :size="64" />
           <div class="min-w-[200px] flex-1">
-            <div class="flex items-center gap-2.5"><h2 class="text-[19px] font-medium text-ink-gray-9">{{ e.employee_name }}</h2>
+            <div class="flex items-center gap-2.5"><h2 class="text-2xl font-medium text-ink-gray-9">{{ e.employee_name }}</h2>
               <StatusBadge tone="success" size="sm" dot label="Active" /><StatusBadge v-if="e.grade" tone="neutral" size="sm" :label="e.grade" /></div>
-            <div class="mt-0.5 text-[13px] text-ink-gray-7">{{ e.designation }} · {{ (e.department || '').split(' - ')[0] }} · {{ e.location }}</div>
-            <div class="tnum mt-1 text-[12.5px] text-ink-gray-5">{{ e.employee_number }} · Reports to {{ e.manager_name || '—' }}</div>
+            <div class="mt-0.5 text-sm text-ink-gray-7">{{ e.designation }} · {{ (e.department || '').split(' - ')[0] }} · {{ e.location }}</div>
+            <div class="tnum mt-1 text-xs text-ink-gray-5">{{ e.employee_number }} · Reports to {{ e.manager_name || '—' }}</div>
           </div>
           <div class="flex gap-2">
             <Button variant="outline" theme="gray" label="Edit" @click="openEdit"><template #prefix><Icon name="edit" :size="15" /></template></Button>
-            <Button variant="subtle" theme="red" label="Initiate exit" @click="openExit"><template #prefix><Icon name="logout" :size="15" /></template></Button>
+            <Button variant="subtle" theme="red" label="Initiate Exit" @click="openExit"><template #prefix><Icon name="logout" :size="15" /></template></Button>
           </div>
         </div>
         <div class="px-5"><Tabs :tabs="[{ id: 'overview', label: 'Overview' }, { id: 'comp', label: 'Compensation' }, { id: 'stats', label: 'Quick stats' }]" v-model:active="tab" /></div>
@@ -90,7 +90,7 @@ function openExit() {
             <AmountRow label="Total CTC" :value="formatINR(e.ctc || 0)" bold :border="false" />
           </div>
           <div v-else-if="tab === 'stats'">
-            <SectionLabel label="Recent payslips" />
+            <SectionLabel label="Recent Payslips" />
             <AmountRow v-for="s in r.data?.slips || []" :key="s.name" :label="s.name" :value="formatINR(s.net_pay)" />
           </div>
           <div v-else class="flex flex-col gap-6">
@@ -108,7 +108,7 @@ function openExit() {
           </div>
         </Card>
         <Card>
-          <CardHeader title="Quick stats" />
+          <CardHeader title="Quick Stats" />
           <AmountRow label="Tenure" :value="e.tenure" />
           <AmountRow label="CTC" :value="formatINR(e.ctc || 0)" />
           <AmountRow label="Grade" :value="e.grade || '—'" :border="false" />
@@ -116,7 +116,7 @@ function openExit() {
       </div>
     </template>
 
-    <Drawer :open="editOpen" title="Edit employee" :subtitle="e.employee_name" :width="500" @close="editOpen = false">
+    <Drawer :open="editOpen" title="Edit Employee" :subtitle="e.employee_name" :width="500" @close="editOpen = false">
       <div class="grid grid-cols-2 gap-x-3 gap-y-4">
         <div class="col-span-1"><FormControl type="select" label="Designation" :options="designations" v-model="edit.designation" /></div>
         <div class="col-span-1"><FormControl type="select" label="Department" :options="departments" v-model="edit.department" /></div>
@@ -126,12 +126,12 @@ function openExit() {
       </div>
       <template #footer>
         <Button variant="ghost" label="Cancel" @click="editOpen = false" />
-        <Button variant="solid" theme="blue" label="Save changes" :loading="save.loading" @click="saveEdit" />
+        <Button variant="solid" theme="blue" label="Save Changes" :loading="save.loading" @click="saveEdit" />
       </template>
     </Drawer>
 
-    <FormDrawer :open="exit.open" title="Initiate exit" :subtitle="e.employee_name"
-      :fields="exitFields" v-model="exitForm" :loading="exit.create.loading" submit-label="Initiate exit"
+    <FormDrawer :open="exit.open" title="Initiate Exit" :subtitle="e.employee_name"
+      :fields="exitFields" v-model="exitForm" :loading="exit.create.loading" submit-label="Initiate Exit"
       @close="exit.open = false" @submit="exit.submit(exitForm, ['employee', 'boarding_begins_on'])" />
   </div>
 </template>

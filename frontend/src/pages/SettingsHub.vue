@@ -5,6 +5,7 @@
 // so this is pure information architecture (no new CRUD here).
 import { ref, computed, watch } from "vue"
 import { useRouter } from "vue-router"
+import { Button } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Icon from "@/components/ui/Icon.vue"
 import EmptyState from "@/components/ui/EmptyState.vue"
@@ -40,41 +41,45 @@ function open(item) {
     <div v-else class="mt-5 grid gap-6" style="grid-template-columns: 200px minmax(0, 1fr)">
       <!-- Category rail -->
       <nav class="flex flex-col gap-0.5">
-        <button
+        <Button
           v-for="cat in categories"
           :key="cat.label"
-          class="flex h-9 items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] transition-colors"
-          :class="active === cat.label
-            ? 'bg-surface-gray-3 font-medium text-ink-gray-9'
-            : 'font-normal text-ink-gray-7 hover:bg-surface-gray-2'"
+          :variant="active === cat.label ? 'subtle' : 'ghost'"
+          theme="gray"
+          class="w-full !justify-start text-left"
           @click="active = cat.label"
         >
-          <Icon :name="cat.icon" :size="16" :class="active === cat.label ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
-          <span class="flex-1 truncate">{{ cat.label }}</span>
-        </button>
+          <div class="flex w-full items-center gap-2.5">
+            <Icon :name="cat.icon" :size="16" :class="active === cat.label ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
+            <span class="flex-1 truncate text-sm" :class="active === cat.label ? 'font-medium text-ink-gray-9' : 'font-normal text-ink-gray-7'">{{ cat.label }}</span>
+          </div>
+        </Button>
       </nav>
 
       <!-- Cards for the active category -->
       <div>
-        <h2 class="mb-3 text-[13px] font-medium text-ink-gray-5">{{ current.label }}</h2>
+        <h2 class="mb-3 text-sm font-medium text-ink-gray-5">{{ current.label }}</h2>
         <div class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))">
-          <button
+          <Button
             v-for="item in current.items"
             :key="item.id"
-            class="group flex items-start gap-3 rounded-xl border border-outline-gray-1 bg-surface-white p-4 text-left transition-all hover:border-outline-gray-3 hover:shadow-sm"
+            variant="ghost"
+            class="w-full !justify-start !h-auto text-left"
             @click="open(item)"
           >
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-gray-2 text-ink-gray-7 group-hover:bg-surface-gray-3">
-              <Icon :name="item.icon" :size="17" />
-            </span>
-            <span class="min-w-0 flex-1">
-              <span class="flex items-center justify-between gap-2">
-                <span class="truncate text-[13.5px] font-medium text-ink-gray-9">{{ item.label }}</span>
-                <Icon name="chevRight" :size="15" class="shrink-0 text-ink-gray-4 transition-transform group-hover:translate-x-0.5 group-hover:text-ink-gray-6" />
+            <span class="flex w-full items-start gap-3">
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-gray-2 text-ink-gray-7">
+                <Icon :name="item.icon" :size="17" />
               </span>
-              <span class="mt-0.5 block text-[12px] leading-snug text-ink-gray-5">{{ item.desc }}</span>
+              <span class="min-w-0 flex-1">
+                <span class="flex items-center justify-between gap-2">
+                  <span class="truncate text-sm font-medium text-ink-gray-9">{{ item.label }}</span>
+                  <Icon name="chevRight" :size="15" class="shrink-0 text-ink-gray-4" />
+                </span>
+                <span class="mt-0.5 block text-xs leading-snug text-ink-gray-5">{{ item.desc }}</span>
+              </span>
             </span>
-          </button>
+          </Button>
         </div>
       </div>
     </div>

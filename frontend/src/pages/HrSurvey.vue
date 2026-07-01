@@ -17,8 +17,8 @@ function newSurvey() {
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Survey builder" subtitle="Pulse surveys, eNPS and feedback forms">
-      <template #actions><Button variant="solid" theme="blue" label="New survey" @click="newSurvey"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+    <PageHeader title="Survey Builder" subtitle="Pulse surveys, eNPS and feedback forms">
+      <template #actions><Button variant="solid" theme="blue" label="New Survey" @click="newSurvey"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading surveys…">
     <Card>

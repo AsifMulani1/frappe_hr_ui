@@ -5,7 +5,7 @@
 // record's name, which we append to the options and select. This is what lets
 // users create a master in-context instead of detouring to the Settings hub.
 import { ref, watch } from "vue"
-import { Select } from "frappe-ui"
+import { Select, Button } from "frappe-ui"
 import Icon from "./Icon.vue"
 
 const props = defineProps({
@@ -47,15 +47,16 @@ function requestCreate() {
         :placeholder="placeholder"
         @update:model-value="emit('update:modelValue', $event)"
       />
-      <button
-        type="button"
+      <Button
+        variant="ghost"
         :disabled="disabled"
-        :title="`New ${doctype}`"
-        class="flex h-8 w-8 shrink-0 items-center justify-center rounded text-ink-gray-6 hover:bg-surface-gray-2 disabled:opacity-40"
+        :label="`New ${doctype}`"
+        :tooltip="`New ${doctype}`"
+        class="shrink-0"
         @click="requestCreate"
       >
-        <Icon name="plus" :size="15" />
-      </button>
+        <template #icon><Icon name="plus" :size="15" /></template>
+      </Button>
     </div>
   </div>
 </template>

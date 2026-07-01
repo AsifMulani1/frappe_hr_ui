@@ -13,14 +13,14 @@ const d = computed(() => r.data || {})
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Org chart" subtitle="Your reporting structure" />
+    <PageHeader title="Org Chart" subtitle="Your reporting structure" />
     <AsyncShell :resource="r" loading-text="Loading org chart…">
     <Card class="overflow-x-auto !p-10">
       <div class="flex min-w-[760px] flex-col items-center">
         <Card v-if="d.manager" class="min-w-[190px] text-center !border-blue-100 !bg-blue-50 !px-4 !py-3">
           <div class="mb-2 flex justify-center"><InitialsAvatar :name="d.manager.name" :size="42" /></div>
-          <div class="text-[14px] font-medium text-ink-gray-9">{{ d.manager.name }}</div>
-          <div class="text-[11.5px] text-ink-gray-7">{{ d.manager.designation }}</div>
+          <div class="text-base font-medium text-ink-gray-9">{{ d.manager.name }}</div>
+          <div class="text-xs text-ink-gray-7">{{ d.manager.designation }}</div>
         </Card>
         <div v-if="(d.reports || []).length" class="h-6 w-0.5 bg-outline-gray-2" />
         <div v-if="(d.reports || []).length" class="relative flex gap-5">
@@ -29,8 +29,8 @@ const d = computed(() => r.data || {})
             <div class="h-6 w-0.5 bg-outline-gray-2" />
             <Card hover class="min-w-[140px] cursor-pointer text-center !px-3.5 !py-3">
               <div class="mb-1.5 flex justify-center"><InitialsAvatar :name="rp.name" :size="34" /></div>
-              <div class="text-[12.5px] font-medium text-ink-gray-9">{{ rp.name }}</div>
-              <div class="text-[11px] text-ink-gray-5">{{ rp.designation }}</div>
+              <div class="text-xs font-medium text-ink-gray-9">{{ rp.name }}</div>
+              <div class="text-2xs text-ink-gray-5">{{ rp.designation }}</div>
             </Card>
           </div>
         </div>

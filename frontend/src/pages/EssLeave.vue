@@ -82,7 +82,7 @@ const totalLeft = computed(() => (d.value.balance || []).reduce((s, b) => s + (N
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Leave" subtitle="Apply for time off and track your requests">
       <template #actions>
-        <Button variant="solid" theme="blue" label="Apply for leave" @click="open = true"><template #prefix><Icon name="plus" :size="15" /></template></Button>
+        <Button variant="solid" theme="blue" label="Apply for Leave" @click="open = true"><template #prefix><Icon name="plus" :size="15" /></template></Button>
       </template>
     </PageHeader>
 
@@ -106,29 +106,29 @@ const totalLeft = computed(() => (d.value.balance || []).reduce((s, b) => s + (N
 
       <div class="flex flex-col gap-5">
         <Card>
-          <CardHeader title="Leave balance" sub="Current financial year" />
+          <CardHeader title="Leave Balance" sub="Current financial year" />
           <div class="mb-3 text-center">
-            <div class="tnum text-[30px] font-medium text-ink-gray-9">{{ totalLeft }}</div>
-            <div class="text-[11.5px] text-ink-gray-5">days available</div>
+            <div class="tnum text-7xl font-medium text-ink-gray-9">{{ totalLeft }}</div>
+            <div class="text-xs text-ink-gray-5">days available</div>
           </div>
           <div class="flex flex-col gap-2.5">
             <div v-for="b in d.balance || []" :key="b.code" class="flex items-center gap-2.5">
               <span class="h-2.5 w-2.5 shrink-0 rounded-[3px]" :class="(LEAVE_THEME[b.color] || LEAVE_THEME.blue).dot" />
-              <span class="flex-1 truncate text-[13px] text-ink-gray-7">{{ b.type }}</span>
-              <span class="tnum whitespace-nowrap text-[13px] font-medium text-ink-gray-9">{{ b.balance }}<span class="font-normal text-ink-gray-5"> / {{ b.total }}</span></span>
+              <span class="flex-1 truncate text-sm text-ink-gray-7">{{ b.type }}</span>
+              <span class="tnum whitespace-nowrap text-sm font-medium text-ink-gray-9">{{ b.balance }}<span class="font-normal text-ink-gray-5"> / {{ b.total }}</span></span>
             </div>
           </div>
         </Card>
         <Card>
-          <CardHeader title="Team on leave" sub="Next 7 days" />
+          <CardHeader title="Team on Leave" sub="Next 7 days" />
           <div v-if="(d.who_is_out || []).length" class="flex flex-col gap-3">
             <div v-for="(p, i) in d.who_is_out" :key="i" class="flex items-center gap-2.5">
               <InitialsAvatar :name="p.name" :size="30" />
-              <div class="min-w-0 flex-1"><div class="text-[13px] font-medium text-ink-gray-9">{{ p.name }}</div><div class="text-[11.5px] text-ink-gray-5">{{ p.note }}</div></div>
-              <span class="text-[11.5px] text-ink-gray-5">{{ p.until }}</span>
+              <div class="min-w-0 flex-1"><div class="text-sm font-medium text-ink-gray-9">{{ p.name }}</div><div class="text-xs text-ink-gray-5">{{ p.note }}</div></div>
+              <span class="text-xs text-ink-gray-5">{{ p.until }}</span>
             </div>
           </div>
-          <div v-else class="py-3 text-center text-[13px] text-ink-gray-5">No one's out.</div>
+          <div v-else class="py-3 text-center text-sm text-ink-gray-5">No one's out.</div>
         </Card>
       </div>
     </div>
@@ -141,7 +141,7 @@ const totalLeft = computed(() => (d.value.balance || []).reduce((s, b) => s + (N
           <DateField label="From" v-model="form.from_date" />
           <DateField label="To" v-model="form.to_date" />
         </div>
-        <div v-if="preview.data && form.leave_type && form.from_date" class="flex items-center justify-between rounded-md bg-surface-gray-2 px-3 py-2 text-[12.5px]">
+        <div v-if="preview.data && form.leave_type && form.from_date" class="flex items-center justify-between rounded-md bg-surface-gray-2 px-3 py-2 text-xs">
           <span class="text-ink-gray-7"><span class="font-medium text-ink-gray-9 tnum">{{ preview.data.days }}</span> day(s) requested</span>
           <span v-if="preview.data.balance != null" class="text-ink-gray-7"><span class="font-medium text-ink-gray-9 tnum">{{ preview.data.balance }}</span> available</span>
         </div>
@@ -149,7 +149,7 @@ const totalLeft = computed(() => (d.value.balance || []).reduce((s, b) => s + (N
       </div>
       <template #footer>
         <Button variant="ghost" label="Cancel" @click="open = false" />
-        <Button variant="solid" theme="blue" label="Submit request" :loading="apply.loading" @click="submitLeave" />
+        <Button variant="solid" theme="blue" label="Submit Request" :loading="apply.loading" @click="submitLeave" />
       </template>
     </Drawer>
   </div>

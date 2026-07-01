@@ -27,18 +27,18 @@ const toneText = computed(
 <template>
   <Card :pad="false" class="p-[18px]">
     <div class="flex items-start justify-between">
-      <div class="text-[12.5px] font-medium text-ink-gray-5">{{ label }}</div>
+      <div class="text-xs font-medium text-ink-gray-5">{{ label }}</div>
       <div v-if="icon" class="opacity-85" :class="toneText"><Icon :name="icon" :size="17" /></div>
     </div>
-    <div class="tnum mt-2 text-[26px] font-medium tracking-tight text-ink-gray-9">{{ value }}</div>
+    <div class="tnum mt-2 text-5xl font-medium tracking-tight text-ink-gray-9">{{ value }}</div>
     <div v-if="sub || delta" class="mt-1 flex items-center gap-1.5">
       <span
         v-if="delta"
-        class="text-[12.5px] font-medium"
+        class="text-xs font-medium"
         :class="delta.up ? 'text-green-600' : 'text-red-600'"
         >{{ delta.up ? "↑" : "↓" }} {{ delta.value }}</span
       >
-      <span v-if="sub" class="text-[12.5px] text-ink-gray-5">{{ sub }}</span>
+      <span v-if="sub" class="text-xs text-ink-gray-5">{{ sub }}</span>
     </div>
   </Card>
 </template>

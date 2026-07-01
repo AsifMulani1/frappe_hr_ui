@@ -79,10 +79,10 @@ const columns = [
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Employee directory" :subtitle="`${(d.people || []).length} employees · manage records, status and compensation`">
+    <PageHeader title="Employee Directory" :subtitle="`${(d.people || []).length} employees · manage records, status and compensation`">
       <template #actions>
         <Button variant="outline" theme="gray" label="Import (CSV)" @click="router.push({ name: 'SetupWizard', query: { step: 'employees' } })"><template #prefix><Icon name="download" :size="15" /></template></Button>
-        <Button variant="solid" theme="blue" label="Add employee" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button>
+        <Button variant="solid" theme="blue" label="Add Employee" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button>
       </template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading directory…">
@@ -93,7 +93,7 @@ const columns = [
         <DataTable :columns="columns" :rows="people" row-key="name" selectable :loading="r.loading" @row-click="router.push({ name: 'HrEmployee360', query: { id: $event.name } })">
           <template #cell-employee_name="{ row }">
             <div class="flex items-center gap-2.5"><InitialsAvatar :name="row.employee_name" :image="row.image" :size="32" />
-              <div><div class="font-medium">{{ row.employee_name }}</div><div class="tnum text-[11.5px] text-ink-gray-5">{{ row.employee_number }}</div></div></div>
+              <div><div class="font-medium">{{ row.employee_name }}</div><div class="tnum text-xs text-ink-gray-5">{{ row.employee_number }}</div></div></div>
           </template>
           <template #cell-department="{ row }"><StatusBadge tone="neutral" size="sm" :label="(row.department || '').split(' - ')[0]" /></template>
           <template #cell-location="{ row }"><span class="text-ink-gray-7">{{ row.location }}</span></template>
@@ -105,7 +105,7 @@ const columns = [
     </Card>
     </AsyncShell>
 
-    <Drawer :open="open" title="Add employee" subtitle="Create a new employee record" :width="520" @close="open = false">
+    <Drawer :open="open" title="Add Employee" subtitle="Create a new employee record" :width="520" @close="open = false">
       <div class="flex flex-col gap-4">
         <div class="grid grid-cols-2 gap-3">
           <FormControl type="text" label="First name" v-model="form.first_name" />
@@ -127,7 +127,7 @@ const columns = [
       </div>
       <template #footer>
         <Button variant="ghost" label="Cancel" @click="open = false" />
-        <Button variant="solid" theme="blue" label="Create employee" :loading="create.loading" @click="submitEmployee" />
+        <Button variant="solid" theme="blue" label="Create Employee" :loading="create.loading" @click="submitEmployee" />
       </template>
     </Drawer>
   </div>

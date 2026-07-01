@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from "vue"
 import { useRouter, useRoute } from "vue-router"
-import { Dropdown } from "frappe-ui"
+import { Dropdown, Button } from "frappe-ui"
 import Icon from "@/components/ui/Icon.vue"
 import BrandLogo from "@/components/ui/BrandLogo.vue"
 import { useUiStore } from "@/stores/ui"
@@ -42,7 +42,7 @@ function isActive(item) {
 
 <template>
   <aside
-    class="fixed inset-y-0 left-0 z-[70] flex h-full w-[232px] flex-col border-r border-outline-gray-1 bg-surface-menu-bar transition-transform lg:static lg:z-auto lg:translate-x-0 lg:transition-all"
+    class="fixed inset-y-0 left-0 z-[70] flex h-full w-[232px] flex-col border-r border-outline-gray-1 bg-surface-base transition-transform lg:static lg:z-auto lg:translate-x-0 lg:transition-all"
     :class="[
       collapsed ? 'lg:w-[60px]' : 'lg:w-[232px]',
       ui.mobileNavOpen ? 'translate-x-0' : '-translate-x-full',
@@ -51,70 +51,80 @@ function isActive(item) {
     <!-- Workspace switcher -->
     <div class="px-2.5 pb-1.5 pt-2.5">
       <Dropdown :options="roleOptions" placement="left">
-        <button
-          class="flex h-10 w-full items-center gap-2.5 rounded-md px-2 hover:bg-surface-gray-2"
-          :class="collapsed ? 'justify-center' : ''"
+        <Button
+          variant="ghost"
+          class="w-full"
+          :class="collapsed ? '!justify-center' : '!justify-start'"
         >
-          <BrandLogo :size="26" class="shrink-0" />
+          <template #prefix><BrandLogo :size="26" class="shrink-0" /></template>
           <span v-if="!collapsed" class="min-w-0 flex-1 text-left leading-tight">
-            <span class="block truncate text-[13px] font-medium text-ink-gray-9">Frappe HR</span>
-            <span class="block truncate text-[11px] text-ink-gray-5">{{ currentRole?.label }}</span>
+            <span class="block truncate text-sm font-medium text-ink-gray-9">Frappe HR</span>
+            <span class="block truncate text-2xs text-ink-gray-5">{{ currentRole?.label }}</span>
           </span>
-          <Icon v-if="!collapsed" name="chevUpDown" :size="15" class="text-ink-gray-5" />
-        </button>
+          <template v-if="!collapsed" #suffix><Icon name="chevUpDown" :size="15" class="text-ink-gray-5" /></template>
+        </Button>
       </Dropdown>
     </div>
 
     <!-- Search -->
     <div v-if="!collapsed" class="px-2.5 pb-2">
-      <button
-        class="flex h-[30px] w-full items-center gap-1.5 rounded-md bg-surface-gray-2 px-2 text-ink-gray-5 hover:bg-surface-gray-3"
+      <Button
+        variant="ghost"
+        class="w-full !justify-start"
         @click="ui.openSearch()"
       >
-        <Icon name="search" :size="14" />
-        <span class="flex-1 text-left text-[13px]">Search</span>
-        <kbd
-          class="rounded border border-outline-gray-1 bg-surface-white px-1 font-mono text-[11px] text-ink-gray-5"
-          >⌘K</kbd
-        >
-      </button>
+        <template #prefix><Icon name="search" :size="14" /></template>
+        <span class="flex-1 text-left text-sm">Search</span>
+        <template #suffix>
+          <kbd
+            class="rounded border border-outline-gray-1 bg-surface-base px-1 font-mono text-2xs text-ink-gray-5"
+            >⌘K</kbd
+          >
+        </template>
+      </Button>
     </div>
     <!-- collapsed: search icon -->
     <div v-else class="px-2.5 pb-2">
-      <button
-        class="flex h-[30px] w-full items-center justify-center rounded-md bg-surface-gray-2 text-ink-gray-5 hover:bg-surface-gray-3"
-        title="Search (⌘K)"
+      <Button
+        variant="ghost"
+        class="w-full !justify-center"
+        label="Search"
+        tooltip="Search (⌘K)"
         @click="ui.openSearch()"
       >
-        <Icon name="search" :size="15" />
-      </button>
+        <template #icon><Icon name="search" :size="15" /></template>
+      </Button>
     </div>
 
     <!-- Nav -->
     <nav class="flex flex-1 flex-col gap-px overflow-y-auto px-2.5 py-0.5">
       <!-- Flat items (employee / manager) -->
       <template v-if="cfg.items">
-        <button
+        <Button
           v-for="it in cfg.items"
           :key="it.id"
-          :title="collapsed ? it.label : undefined"
-          class="flex h-8 items-center gap-2.5 rounded-md border-none text-[13px] transition-colors"
-          :class="[
-            collapsed ? 'justify-center px-0' : 'px-2',
-            isActive(it)
-              ? 'bg-surface-gray-3 font-medium text-ink-gray-9'
-              : 'font-normal text-ink-gray-7 hover:bg-surface-gray-2',
-          ]"
+          :variant="isActive(it) ? 'subtle' : 'ghost'"
+          theme="gray"
+          class="w-full"
+          :class="collapsed ? '!justify-center' : '!justify-start'"
+          :label="collapsed ? it.label : undefined"
+          :tooltip="collapsed ? it.label : undefined"
           @click="go(it)"
         >
-          <Icon :name="it.icon" :size="16" :class="isActive(it) ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
+          <template v-if="collapsed" #icon>
+            <Icon :name="it.icon" :size="16" :class="isActive(it) ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
+          </template>
+          <template v-else #prefix>
+            <Icon :name="it.icon" :size="16" :class="isActive(it) ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
+          </template>
           <span v-if="!collapsed" class="flex-1 truncate text-left">{{ it.label }}</span>
-          <span
-            v-if="!collapsed && it.badge"
-            class="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-surface-gray-3 px-1.5 text-[11px] font-medium text-ink-gray-7"
-            >{{ it.badge }}</span
-          >
-        </button>
+          <template v-if="!collapsed && it.badge" #suffix>
+            <span
+              class="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-surface-gray-3 px-1.5 text-2xs font-medium text-ink-gray-7"
+              >{{ it.badge }}</span
+            >
+          </template>
+        </Button>
       </template>
 
       <!-- Grouped items (hr) -->
@@ -122,27 +132,30 @@ function isActive(item) {
         <div v-for="(g, gi) in cfg.groups" :key="gi" :class="g.label ? 'mb-2' : 'mb-px'">
           <div
             v-if="g.label && !collapsed"
-            class="px-2 pb-1 pt-2.5 text-[11px] tracking-[.01em] text-ink-gray-5"
+            class="px-2 pb-1 pt-2.5 text-2xs tracking-[.01em] text-ink-gray-5"
           >
             {{ g.label }}
           </div>
           <div class="flex flex-col gap-0.5">
-            <button
+            <Button
               v-for="it in g.items"
               :key="it.id"
-              :title="collapsed ? it.label : undefined"
-              class="flex h-8 items-center gap-2.5 rounded-md border-none text-[13px] transition-colors"
-              :class="[
-                collapsed ? 'justify-center px-0' : 'px-2',
-                isActive(it)
-                  ? 'bg-surface-gray-3 font-medium text-ink-gray-9'
-                  : 'font-normal text-ink-gray-7 hover:bg-surface-gray-2',
-              ]"
+              :variant="isActive(it) ? 'subtle' : 'ghost'"
+              theme="gray"
+              class="w-full"
+              :class="collapsed ? '!justify-center' : '!justify-start'"
+              :label="collapsed ? it.label : undefined"
+              :tooltip="collapsed ? it.label : undefined"
               @click="go(it)"
             >
-              <Icon :name="it.icon" :size="16" :class="isActive(it) ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
+              <template v-if="collapsed" #icon>
+                <Icon :name="it.icon" :size="16" :class="isActive(it) ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
+              </template>
+              <template v-else #prefix>
+                <Icon :name="it.icon" :size="16" :class="isActive(it) ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
+              </template>
               <span v-if="!collapsed" class="flex-1 truncate text-left">{{ it.label }}</span>
-            </button>
+            </Button>
           </div>
         </div>
       </template>
@@ -150,29 +163,36 @@ function isActive(item) {
 
     <!-- Settings (admin workspaces only) + Collapse toggle -->
     <div class="border-t border-outline-gray-1 p-3">
-      <button
+      <Button
         v-if="showSettings"
-        :title="collapsed ? 'Settings' : undefined"
-        class="mb-0.5 flex h-9 w-full items-center gap-2.5 rounded-md border-none text-[13px] transition-colors"
-        :class="[
-          collapsed ? 'justify-center px-0' : 'px-2.5',
-          settingsActive
-            ? 'bg-surface-gray-3 font-medium text-ink-gray-9'
-            : 'font-normal text-ink-gray-7 hover:bg-surface-gray-2',
-        ]"
+        :variant="settingsActive ? 'subtle' : 'ghost'"
+        theme="gray"
+        class="mb-0.5 w-full"
+        :class="collapsed ? '!justify-center' : '!justify-start'"
+        :label="collapsed ? 'Settings' : undefined"
+        :tooltip="collapsed ? 'Settings' : undefined"
         @click="router.push({ name: 'Settings' }); ui.closeMobileNav()"
       >
-        <Icon name="settings" :size="16" :class="settingsActive ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
+        <template v-if="collapsed" #icon>
+          <Icon name="settings" :size="16" :class="settingsActive ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
+        </template>
+        <template v-else #prefix>
+          <Icon name="settings" :size="16" :class="settingsActive ? 'text-ink-gray-8' : 'text-ink-gray-6'" />
+        </template>
         <span v-if="!collapsed" class="flex-1 text-left">Settings</span>
-      </button>
-      <button
-        class="hidden h-[34px] w-full items-center gap-2.5 rounded-md border-none bg-transparent text-ink-gray-5 hover:bg-surface-gray-2 lg:flex"
-        :class="collapsed ? 'justify-center px-0' : 'px-2.5'"
+      </Button>
+      <Button
+        variant="ghost"
+        class="hidden w-full lg:flex"
+        :class="collapsed ? '!justify-center' : '!justify-start'"
+        :label="collapsed ? 'Expand' : undefined"
+        :tooltip="collapsed ? 'Expand' : undefined"
         @click="ui.toggleSidebar()"
       >
-        <Icon :name="collapsed ? 'chevRight' : 'chevLeft'" :size="18" />
-        <span v-if="!collapsed" class="text-[13px]">Collapse</span>
-      </button>
+        <template v-if="collapsed" #icon><Icon name="chevRight" :size="18" /></template>
+        <template v-else #prefix><Icon name="chevLeft" :size="18" /></template>
+        <span v-if="!collapsed" class="text-sm">Collapse</span>
+      </Button>
     </div>
   </aside>
 </template>

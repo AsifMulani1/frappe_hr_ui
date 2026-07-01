@@ -39,19 +39,19 @@ function openView(s) {
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Separation & exit" :subtitle="`${rows.length} employees on notice · manage clearances and F&F`">
-      <template #actions><Button variant="solid" theme="blue" label="Initiate exit" @click="openAdd"><template #prefix><Icon name="logout" :size="15" /></template></Button></template>
+    <PageHeader title="Separation & Exit" :subtitle="`${rows.length} employees on notice · manage clearances and F&F`">
+      <template #actions><Button variant="solid" theme="blue" label="Initiate Exit" @click="openAdd"><template #prefix><Icon name="logout" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading separations…">
     <Card :pad="false">
-      <div class="p-5 pb-3.5"><CardHeader title="On notice period" /></div>
+      <div class="p-5 pb-3.5"><CardHeader title="On Notice Period" /></div>
       <EmptyState v-if="!rows.length && !r.loading" icon="logout" title="No active separations" compact />
       <div v-else class="flex flex-col">
         <div v-for="(s, i) in rows" :key="s.employee_name + i" class="flex items-center gap-4 border-t border-outline-gray-1 px-5 py-4">
           <InitialsAvatar :name="s.employee_name" :size="38" />
-          <div class="w-40 min-w-0"><div class="text-[13.5px] font-medium text-ink-gray-9">{{ s.employee_name }}</div><div class="text-[11.5px] text-ink-gray-5">{{ s.designation }}</div></div>
+          <div class="w-40 min-w-0"><div class="text-sm font-medium text-ink-gray-9">{{ s.employee_name }}</div><div class="text-xs text-ink-gray-5">{{ s.designation }}</div></div>
           <div class="max-w-[200px] flex-1">
-            <div class="mb-1.5 flex justify-between"><span class="text-[11.5px] text-ink-gray-5">LWD {{ s.lwd }}</span><span class="tnum text-[12px] font-medium">{{ s.progress }}%</span></div>
+            <div class="mb-1.5 flex justify-between"><span class="text-xs text-ink-gray-5">LWD {{ s.lwd }}</span><span class="tnum text-xs font-medium">{{ s.progress }}%</span></div>
             <ProgressBar :value="s.progress" color="bg-orange-500" />
           </div>
           <Button variant="outline" theme="gray" size="sm" label="Clearance" @click="openView(s)"><template #suffix><Icon name="chevRight" :size="15" /></template></Button>
@@ -60,8 +60,8 @@ function openView(s) {
     </Card>
     </AsyncShell>
 
-    <FormDrawer :open="add.open" title="Initiate exit" subtitle="Start the separation process for an employee"
-      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Initiate exit"
+    <FormDrawer :open="add.open" title="Initiate Exit" subtitle="Start the separation process for an employee"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Initiate Exit"
       @close="add.open = false" @submit="add.submit(form, ['employee', 'boarding_begins_on'])" />
     <DetailDrawer :open="view.open" doctype="Employee Separation" :name="view.name" @close="view.open = false" />
   </div>

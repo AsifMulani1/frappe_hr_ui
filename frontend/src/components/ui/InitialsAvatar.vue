@@ -28,7 +28,7 @@ const ini = computed(() => toInitials(props.name))
       fontSize: size * 0.4 + 'px',
       background: image ? undefined : `color-mix(in srgb, ${color} 14%, white)`,
       color: color,
-      boxShadow: ring ? `0 0 0 2px var(--surface-white, #fff)` : undefined,
+      boxShadow: ring ? `0 0 0 2px var(--surface-base, #fff)` : undefined,
       letterSpacing: '.2px',
     }"
   >

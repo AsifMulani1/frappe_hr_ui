@@ -28,7 +28,7 @@ const columns = [
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Bank disbursement" subtitle="Generate bank advice files for net salary">
+    <PageHeader title="Bank Disbursement" subtitle="Generate bank advice files for net salary">
       <template #actions><Button variant="solid" theme="blue" :label="`Disburse ${formatINRShort(d.total || 0)}`" @click="downloadCSV('bank-disbursement', columns, d.banks)"><template #prefix><Icon name="card" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading disbursement…">

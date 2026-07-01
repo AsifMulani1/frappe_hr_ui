@@ -51,28 +51,29 @@ function quickLink(label) {
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader :title="d.title || 'Compliance'" :subtitle="d.sub">
-      <template #actions><Button variant="solid" theme="blue" label="Generate challan" @click="generateChallan"><template #prefix><Icon name="external" :size="15" /></template></Button></template>
+      <template #actions><Button variant="solid" theme="blue" label="Generate Challan" @click="generateChallan"><template #prefix><Icon name="external" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading compliance…">
     <StatTiles :items="d.stats || []" :cols="4" />
     <div class="grid items-start gap-5" style="grid-template-columns: minmax(0,1fr) 340px">
       <Card>
-        <CardHeader title="Authority & rate" icon="shield" />
+        <CardHeader title="Authority & Rate" icon="shield" />
         <AmountRow label="Statutory body" :value="d.authority" />
         <AmountRow label="Code" :value="d.code" />
         <AmountRow label="Registration no." :value="d.establishment || 'Not set — add in Settings → Statutory profile'" :border="false" />
-        <div class="mt-3 rounded-md border border-outline-gray-1 bg-surface-gray-1 p-3 text-[12.5px] leading-relaxed text-ink-gray-7">
+        <div class="mt-3 rounded-md border border-outline-gray-1 bg-surface-gray-1 p-3 text-xs leading-relaxed text-ink-gray-7">
           <b class="font-medium text-ink-gray-9">Rate:</b> {{ d.rate }}
         </div>
       </Card>
       <Card>
-        <CardHeader title="Quick links" />
+        <CardHeader title="Quick Links" />
         <div class="flex flex-col gap-0.5">
-          <button v-for="[ic, t] in [['external', `Open ${d.authority || ''} portal`], ['file', `Download ${d.code || ''} register`], ['calendar', 'Statutory calendar']]" :key="t"
-            @click="quickLink(t)"
-            class="flex items-center gap-2.5 rounded-md px-2 py-2 text-left text-ink-gray-7 hover:bg-surface-gray-1">
-            <Icon :name="ic" :size="16" /><span class="flex-1 text-[13px] text-ink-gray-9">{{ t }}</span><Icon name="chevRight" :size="14" class="text-ink-gray-4" />
-          </button>
+          <Button v-for="[ic, t] in [['external', `Open ${d.authority || ''} portal`], ['file', `Download ${d.code || ''} register`], ['calendar', 'Statutory calendar']]" :key="t"
+            variant="ghost" @click="quickLink(t)" class="w-full !justify-start text-left">
+            <div class="flex w-full items-center gap-2.5">
+              <Icon :name="ic" :size="16" /><span class="flex-1 text-sm text-ink-gray-9">{{ t }}</span><Icon name="chevRight" :size="14" class="text-ink-gray-4" />
+            </div>
+          </Button>
         </div>
       </Card>
     </div>

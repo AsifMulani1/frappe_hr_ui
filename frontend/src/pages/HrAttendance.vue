@@ -36,7 +36,7 @@ const columns = [
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Attendance workspace" subtitle="Company-wide attendance today">
+    <PageHeader title="Attendance Workspace" subtitle="Company-wide attendance today">
       <template #actions><Button variant="solid" theme="blue" label="Regularizations" @click="router.push({ name: 'HrRegularize' })"><template #prefix><Icon name="inbox" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading attendance…">

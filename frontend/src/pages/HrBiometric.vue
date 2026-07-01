@@ -32,8 +32,8 @@ const columns = [
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Biometric sync" subtitle="Device health and punch synchronisation across offices">
-      <template #actions><Button variant="solid" theme="blue" label="Force sync" :loading="sync.loading" @click="sync.submit()"><template #prefix><Icon name="download" :size="15" /></template></Button></template>
+    <PageHeader title="Biometric Sync" subtitle="Device health and punch synchronisation across offices">
+      <template #actions><Button variant="solid" theme="blue" label="Force Sync" :loading="sync.loading" @click="sync.submit()"><template #prefix><Icon name="download" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading devices…">
     <StatTiles :items="tiles" :cols="4" />

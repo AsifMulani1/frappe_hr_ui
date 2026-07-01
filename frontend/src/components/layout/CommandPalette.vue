@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue"
 import { useRouter } from "vue-router"
+import { Button } from "frappe-ui"
 import Icon from "@/components/ui/Icon.vue"
 import { useUiStore } from "@/stores/ui"
 import { NAV, SETTINGS, ADMIN_ROLES } from "@/data/nav"
@@ -91,7 +92,7 @@ onUnmounted(() => document.removeEventListener("keydown", onGlobalKey))
   <Teleport to="body">
     <div v-if="ui.searchOpen" class="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-[12vh]">
       <div class="absolute inset-0 bg-black/30" @click="ui.closeSearch()" />
-      <div class="relative w-full max-w-[560px] overflow-hidden rounded-xl border border-outline-gray-2 bg-surface-white shadow-2xl">
+      <div class="relative w-full max-w-[560px] overflow-hidden rounded-xl border border-outline-gray-2 bg-surface-base shadow-2xl">
         <!-- input -->
         <div class="flex items-center gap-2.5 border-b border-outline-gray-1 px-4">
           <Icon name="search" :size="17" class="text-ink-gray-5" />
@@ -100,32 +101,37 @@ onUnmounted(() => document.removeEventListener("keydown", onGlobalKey))
             v-model="query"
             type="text"
             placeholder="Search screens…"
-            class="h-12 flex-1 border-none bg-transparent text-[14px] text-ink-gray-9 shadow-none outline-none ring-0 focus:border-none focus:shadow-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 placeholder:text-ink-gray-4"
+            class="h-12 flex-1 border-none bg-transparent text-base text-ink-gray-9 shadow-none outline-none ring-0 focus:border-none focus:shadow-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 placeholder:text-ink-gray-4"
             @keydown.down.prevent="move(1)"
             @keydown.up.prevent="move(-1)"
             @keydown.enter.prevent="go(results[active])"
           />
-          <kbd class="rounded border border-outline-gray-2 bg-surface-gray-1 px-1.5 py-0.5 font-mono text-[11px] text-ink-gray-5">esc</kbd>
+          <kbd class="rounded border border-outline-gray-2 bg-surface-gray-1 px-1.5 py-0.5 font-mono text-2xs text-ink-gray-5">esc</kbd>
         </div>
 
         <!-- results -->
         <div ref="listRef" class="max-h-[52vh] overflow-y-auto p-1.5">
-          <button
+          <Button
             v-for="(it, i) in results"
             :key="it.roleId + it.id"
             :data-idx="i"
-            class="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left"
-            :class="i === active ? 'bg-blue-50' : 'hover:bg-surface-gray-1'"
+            :variant="i === active ? 'subtle' : 'ghost'"
+            theme="gray"
+            class="w-full !justify-start"
             @click="go(it)"
             @mousemove="active = i"
           >
-            <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-gray-2 text-ink-gray-7">
-              <Icon :name="it.icon" :size="15" />
-            </div>
-            <span class="flex-1 truncate text-[13.5px] text-ink-gray-9">{{ it.label }}</span>
-            <span class="shrink-0 text-[11px] text-ink-gray-5">{{ it.group ? `${it.roleLabel} · ${it.group}` : it.roleLabel }}</span>
-          </button>
-          <div v-if="!results.length" class="px-3 py-8 text-center text-[13px] text-ink-gray-5">
+            <template #prefix>
+              <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-gray-2 text-ink-gray-7">
+                <Icon :name="it.icon" :size="15" />
+              </div>
+            </template>
+            <span class="flex-1 truncate text-sm text-ink-gray-9">{{ it.label }}</span>
+            <template #suffix>
+              <span class="shrink-0 text-2xs text-ink-gray-5">{{ it.group ? `${it.roleLabel} · ${it.group}` : it.roleLabel }}</span>
+            </template>
+          </Button>
+          <div v-if="!results.length" class="px-3 py-8 text-center text-sm text-ink-gray-5">
             No screens match “{{ query }}”.
           </div>
         </div>

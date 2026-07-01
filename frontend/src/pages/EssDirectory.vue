@@ -49,14 +49,13 @@ const columns = [
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="People directory" :subtitle="`${(r.data?.people || []).length} people across ${(r.data?.departments || []).length} departments`" />
+    <PageHeader title="People Directory" :subtitle="`${(r.data?.people || []).length} people across ${(r.data?.departments || []).length} departments`" />
 
     <AsyncShell :resource="r" loading-text="Loading directory…">
     <Toolbar v-model="q" search="Search by name, team or role…">
       <div class="flex flex-wrap gap-1.5">
-        <button v-for="x in depts.slice(0, 6)" :key="x" @click="dept = x"
-          class="h-[34px] rounded-md border px-3 text-[13px] font-medium"
-          :class="dept === x ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-outline-gray-2 bg-surface-white text-ink-gray-7'">{{ x }}</button>
+        <Button v-for="x in depts.slice(0, 6)" :key="x" @click="dept = x"
+          :variant="dept === x ? 'subtle' : 'ghost'" theme="gray" size="sm">{{ x }}</Button>
       </div>
       <template #right><Segmented :options="[{ id: 'grid', label: 'Grid' }, { id: 'list', label: 'List' }]" v-model="view" /></template>
     </Toolbar>
@@ -66,9 +65,9 @@ const columns = [
         <div class="flex items-start gap-3">
           <InitialsAvatar :name="p.employee_name" :image="p.image" :size="44" />
           <div class="min-w-0 flex-1">
-            <div class="truncate text-[14px] font-medium text-ink-gray-9">{{ p.employee_name }}</div>
-            <div class="truncate text-[12.5px] text-ink-gray-7">{{ p.designation }}</div>
-            <div class="mt-1.5 flex items-center gap-1.5 text-[11.5px] text-ink-gray-5"><Icon name="mapPin" :size="12" />{{ p.location }}</div>
+            <div class="truncate text-base font-medium text-ink-gray-9">{{ p.employee_name }}</div>
+            <div class="truncate text-xs text-ink-gray-7">{{ p.designation }}</div>
+            <div class="mt-1.5 flex items-center gap-1.5 text-xs text-ink-gray-5"><Icon name="mapPin" :size="12" />{{ p.location }}</div>
           </div>
           <StatusBadge v-if="p.status !== 'Active'" :tone="STATUS_TONE[p.status] || 'neutral'" size="sm" :label="p.status" />
         </div>
@@ -81,7 +80,7 @@ const columns = [
     <DataTable v-else :columns="columns" :rows="people" row-key="name" :loading="r.loading" @row-click="drawer = $event">
       <template #cell-employee_name="{ row }">
         <div class="flex items-center gap-2.5"><InitialsAvatar :name="row.employee_name" :image="row.image" :size="30" />
-          <div><div class="font-medium">{{ row.employee_name }}</div><div class="tnum text-[11.5px] text-ink-gray-5">{{ row.employee_number }}</div></div></div>
+          <div><div class="font-medium">{{ row.employee_name }}</div><div class="tnum text-xs text-ink-gray-5">{{ row.employee_number }}</div></div></div>
       </template>
       <template #cell-department="{ row }"><StatusBadge tone="neutral" size="sm" :label="row.department" /></template>
       <template #cell-location="{ row }"><span class="inline-flex items-center gap-1.5 text-ink-gray-7"><Icon name="mapPin" :size="13" />{{ row.location }}</span></template>
@@ -94,7 +93,7 @@ const columns = [
       <template #head>
         <div v-if="drawer" class="flex items-center gap-3.5">
           <InitialsAvatar :name="drawer.employee_name" :image="drawer.image" :size="52" />
-          <div><div class="text-[16px] font-medium text-ink-gray-9">{{ drawer.employee_name }}</div><div class="text-[12.5px] text-ink-gray-5">{{ drawer.designation }}</div></div>
+          <div><div class="text-lg font-medium text-ink-gray-9">{{ drawer.employee_name }}</div><div class="text-xs text-ink-gray-5">{{ drawer.designation }}</div></div>
         </div>
       </template>
       <div v-if="drawer" class="grid grid-cols-2 gap-x-5 gap-y-4">
@@ -106,8 +105,8 @@ const columns = [
         <Field label="Work email" :value="drawer.company_email" full />
       </div>
       <template #footer>
-        <Button variant="outline" theme="gray" label="Copy email" class="flex-1" @click="copyEmail" />
-        <Button variant="solid" theme="blue" label="Send email" class="flex-1" @click="mailto(drawer?.company_email)" />
+        <Button variant="outline" theme="gray" label="Copy Email" class="flex-1" @click="copyEmail" />
+        <Button variant="solid" theme="blue" label="Send Email" class="flex-1" @click="mailto(drawer?.company_email)" />
       </template>
     </Drawer>
   </div>

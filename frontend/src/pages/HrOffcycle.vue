@@ -45,8 +45,8 @@ const columns = [
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Bonus & off-cycle" subtitle="One-time payouts processed outside the regular run">
-      <template #actions><Button variant="solid" theme="blue" label="New payout" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+    <PageHeader title="Bonus & Off-cycle" subtitle="One-time payouts processed outside the regular run">
+      <template #actions><Button variant="solid" theme="blue" label="New Payout" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading payouts…">
     <StatTiles :items="tiles" :cols="4" />
@@ -61,8 +61,8 @@ const columns = [
     </Card>
     </AsyncShell>
 
-    <FormDrawer :open="add.open" title="New payout" subtitle="One-time off-cycle payout"
-      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Create payout"
+    <FormDrawer :open="add.open" title="New Payout" subtitle="One-time off-cycle payout"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Create Payout"
       @close="add.open = false" @submit="add.submit(form, ['employee', 'salary_component', 'amount', 'payroll_date'])" />
   </div>
 </template>

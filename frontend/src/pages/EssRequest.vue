@@ -17,7 +17,7 @@ const props = defineProps({
   doctype: { type: String, required: true },
   title: String,
   subtitle: String,
-  addLabel: { type: String, default: "New request" },
+  addLabel: { type: String, default: "New Request" },
   fields: { type: Array, default: () => [] },     // [{key,label,type,linkDoctype?,select?,cols?,placeholder?}]
   required: { type: Array, default: () => [] },
   listColumns: { type: Array, default: () => [{ key: "name", label: "Reference" }] },

@@ -29,8 +29,8 @@ const maxFunnel = computed(() => Math.max(1, ...(d.value.funnel || []).map((x) =
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="HR dashboard" :subtitle="`Frappe Technologies · ${d.headcount ?? 0} employees`">
-      <template #actions><Button variant="solid" theme="blue" label="Run payroll" @click="router.push({ name: 'HrPayrun' }).catch(() => {})"><template #prefix><Icon name="rupee" :size="15" /></template></Button></template>
+    <PageHeader title="HR Dashboard" :subtitle="`Frappe Technologies · ${d.headcount ?? 0} employees`">
+      <template #actions><Button variant="solid" theme="blue" label="Run Payroll" @click="router.push({ name: 'HrPayrun' }).catch(() => {})"><template #prefix><Icon name="rupee" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading dashboard…">
     <StatTiles :items="tiles" :cols="4" />
@@ -38,47 +38,49 @@ const maxFunnel = computed(() => Math.max(1, ...(d.value.funnel || []).map((x) =
       <div class="flex flex-col gap-5">
         <div class="grid grid-cols-2 gap-5">
           <Card>
-            <CardHeader title="Headcount by department" />
+            <CardHeader title="Headcount by Department" />
             <div class="flex flex-col gap-2.5">
               <div v-for="[dn, n] in d.dept_counts || []" :key="dn" class="flex items-center gap-2.5">
-                <div class="w-28 truncate text-[12.5px] text-ink-gray-7">{{ dn }}</div>
+                <div class="w-28 truncate text-xs text-ink-gray-7">{{ dn }}</div>
                 <div class="h-4 flex-1 overflow-hidden rounded bg-surface-gray-2"><div class="h-full rounded bg-blue-500/85" :style="{ width: (n / maxDept * 100) + '%' }" /></div>
-                <div class="tnum w-6 text-right text-[12.5px] font-medium">{{ n }}</div>
+                <div class="tnum w-6 text-right text-xs font-medium">{{ n }}</div>
               </div>
             </div>
           </Card>
           <Card>
-            <CardHeader title="This month" sub="Operational pulse" />
+            <CardHeader title="This Month" sub="Operational pulse" />
             <div class="grid grid-cols-2 gap-3.5">
               <div v-for="[l, v, t] in monthTiles" :key="l" class="rounded-md border border-outline-gray-1 p-3">
-                <div class="tnum text-[22px] font-medium" :class="{ 'text-green-600': t === 'success', 'text-red-600': t === 'danger', 'text-orange-600': t === 'warning', 'text-ink-gray-9': t === 'neutral' }">{{ v ?? 0 }}</div>
-                <div class="mt-0.5 text-[12px] text-ink-gray-5">{{ l }}</div>
+                <div class="tnum text-3xl font-medium" :class="{ 'text-green-600': t === 'success', 'text-red-600': t === 'danger', 'text-orange-600': t === 'warning', 'text-ink-gray-9': t === 'neutral' }">{{ v ?? 0 }}</div>
+                <div class="mt-0.5 text-xs text-ink-gray-5">{{ l }}</div>
               </div>
             </div>
           </Card>
         </div>
         <Card>
-          <CardHeader title="Recruitment funnel" :sub="`${d.open_jobs ?? 0} open positions`">
+          <CardHeader title="Recruitment Funnel" :sub="`${d.open_jobs ?? 0} open positions`">
             <template #action><Button variant="ghost" size="sm" label="Pipeline" @click="router.push({ name: 'HrPipeline' }).catch(() => {})" /></template>
           </CardHeader>
           <div class="flex items-stretch gap-0">
             <div v-for="[l, n] in d.funnel || []" :key="l" class="flex-1 text-center">
               <div class="flex h-[70px] items-end justify-center px-1.5"><div class="w-full rounded-t bg-blue-500/85" :style="{ height: (n / maxFunnel * 100) + '%', minHeight: '8px' }" /></div>
-              <div class="tnum mt-1.5 text-[17px] font-medium">{{ n }}</div>
-              <div class="text-[11.5px] text-ink-gray-5">{{ l }}</div>
+              <div class="tnum mt-1.5 text-xl font-medium">{{ n }}</div>
+              <div class="text-xs text-ink-gray-5">{{ l }}</div>
             </div>
           </div>
         </Card>
       </div>
       <Card>
-        <CardHeader title="Action centre" icon="inbox" />
+        <CardHeader title="Action Centre" icon="inbox" />
         <div class="flex flex-col">
-          <button v-for="[t, s, ic, to] in [['Run June payroll', 'Locks soon', 'rupee', 'HrPayrun'], ['File TDS 24Q', 'Due 7 Jun', 'file', 'ComplianceTds'], ['Onboarding tasks', 'New hires', 'login', 'HrOnboarding'], ['Exit clearances', 'On notice', 'logout', 'HrSeparation'], ['Offers to review', 'Recruitment', 'briefcase', 'HrOffers']]" :key="t"
-            @click="router.push({ name: to }).catch(() => {})" class="flex items-center gap-3 border-t border-outline-gray-1 py-3 text-left first:border-t-0">
-            <div class="flex h-[30px] w-[30px] items-center justify-center rounded-md bg-surface-gray-2 text-ink-gray-7"><Icon :name="ic" :size="15" /></div>
-            <div class="min-w-0 flex-1"><div class="text-[13px] font-medium text-ink-gray-9">{{ t }}</div><div class="text-[11.5px] text-ink-gray-5">{{ s }}</div></div>
-            <Icon name="chevRight" :size="15" class="text-ink-gray-4" />
-          </button>
+          <Button v-for="[t, s, ic, to] in [['Run June payroll', 'Locks soon', 'rupee', 'HrPayrun'], ['File TDS 24Q', 'Due 7 Jun', 'file', 'ComplianceTds'], ['Onboarding tasks', 'New hires', 'login', 'HrOnboarding'], ['Exit clearances', 'On notice', 'logout', 'HrSeparation'], ['Offers to review', 'Recruitment', 'briefcase', 'HrOffers']]" :key="t"
+            variant="ghost" @click="router.push({ name: to }).catch(() => {})" class="w-full !justify-start border-t border-outline-gray-1 text-left first:border-t-0">
+            <div class="flex w-full items-center gap-3">
+              <div class="flex h-[30px] w-[30px] items-center justify-center rounded-md bg-surface-gray-2 text-ink-gray-7"><Icon :name="ic" :size="15" /></div>
+              <div class="min-w-0 flex-1"><div class="text-sm font-medium text-ink-gray-9">{{ t }}</div><div class="text-xs text-ink-gray-5">{{ s }}</div></div>
+              <Icon name="chevRight" :size="15" class="text-ink-gray-4" />
+            </div>
+          </Button>
         </div>
       </Card>
     </div>

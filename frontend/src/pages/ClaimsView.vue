@@ -17,7 +17,7 @@ import { formatINR } from "@/utils/formatters"
 const props = defineProps({
   title: { type: String, default: "Reimbursements" },
   subtitle: { type: String, default: "Claim work expenses paid out of pocket" },
-  addLabel: { type: String, default: "New reimbursement" },
+  addLabel: { type: String, default: "New Reimbursement" },
 })
 const r = createResource({ url: "frappe_hr_ui.api.get_expense_claims_screen", auto: true })
 const d = computed(() => r.data || {})
@@ -99,7 +99,7 @@ const columns = [
         </div>
         <FormControl type="textarea" label="Description" placeholder="What was this for?" v-model="form.description" />
       </div>
-      <template #footer><Button variant="ghost" label="Cancel" @click="open = false" /><Button variant="solid" theme="blue" label="Submit claim" :loading="submit.loading" @click="submitClaim" /></template>
+      <template #footer><Button variant="ghost" label="Cancel" @click="open = false" /><Button variant="solid" theme="blue" label="Submit Claim" :loading="submit.loading" @click="submitClaim" /></template>
     </Drawer>
   </div>
 </template>

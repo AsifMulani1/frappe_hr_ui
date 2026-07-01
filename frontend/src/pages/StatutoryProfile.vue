@@ -21,7 +21,7 @@ function doSave() { save.submit({ values: JSON.stringify({ ...form }) }) }
 
 <template>
   <div class="mx-auto max-w-[760px] px-6 py-[22px]">
-    <PageHeader title="Statutory profile"
+    <PageHeader title="Statutory Profile"
       :subtitle="`Registration numbers for ${r.data?.company_name || r.data?.company || 'your company'} — they appear on registers, challans and returns`" />
     <AsyncShell :resource="r" loading-text="Loading statutory profile…">
       <Card>
@@ -31,12 +31,12 @@ function doSave() { save.submit({ values: JSON.stringify({ ...form }) }) }
           <FormControl type="text" label="Professional Tax Reg. No." placeholder="State PT registration" v-model="form.pt_registration_number" />
           <FormControl type="text" label="TAN (for TDS / 24Q)" placeholder="e.g. MUMA12345B" v-model="form.tan_number" />
         </div>
-        <p class="mt-4 text-[12px] leading-relaxed text-ink-gray-5">
+        <p class="mt-4 text-xs leading-relaxed text-ink-gray-5">
           These identify your company to <span class="font-medium text-ink-gray-7">EPFO, ESIC, the state government and the Income Tax department</span>.
           They print on the statutory registers and challans you file each cycle.
         </p>
         <div class="mt-5 flex justify-end">
-          <Button variant="solid" theme="blue" label="Save profile" :loading="save.loading" @click="doSave" />
+          <Button variant="solid" theme="blue" label="Save Profile" :loading="save.loading" @click="doSave" />
         </div>
       </Card>
     </AsyncShell>

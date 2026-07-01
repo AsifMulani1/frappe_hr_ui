@@ -34,19 +34,19 @@ const rows = computed(() => data.data?.rows || [])
     <template #head>
       <div class="flex w-full items-center justify-between gap-3">
         <div>
-          <div class="text-[15.5px] font-medium text-ink-gray-9">{{ title || report }}</div>
-          <div class="mt-0.5 text-[12.5px] text-ink-gray-5">{{ rows.length }} rows</div>
+          <div class="text-md font-medium text-ink-gray-9">{{ title || report }}</div>
+          <div class="mt-0.5 text-xs text-ink-gray-5">{{ rows.length }} rows</div>
         </div>
         <Button v-if="rows.length" variant="subtle" theme="gray" size="sm" label="Download CSV"
           @click="downloadCSV(report, columns, rows)" />
       </div>
     </template>
 
-    <div v-if="data.loading" class="py-10 text-center text-[13px] text-ink-gray-5">Running report…</div>
+    <div v-if="data.loading" class="py-10 text-center text-sm text-ink-gray-5">Running report…</div>
     <EmptyState v-else-if="data.data?.error" icon="alert" title="Couldn't run report" :message="data.data.error" compact />
     <EmptyState v-else-if="!rows.length" icon="inbox" title="No data" message="This report returned no rows for the current period." compact />
     <div v-else class="overflow-x-auto">
-      <table class="w-full border-collapse text-[12.5px]">
+      <table class="w-full border-collapse text-xs">
         <thead>
           <tr class="border-b border-outline-gray-2 text-left text-ink-gray-5">
             <th v-for="c in columns" :key="c.key" class="whitespace-nowrap px-2.5 py-2 font-medium">{{ c.label }}</th>

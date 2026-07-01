@@ -136,7 +136,7 @@ function submitForm() {
 
 <template>
   <Drawer :open="open" :title="title" :subtitle="doctype" :width="560" @close="emit('close')">
-    <div v-if="loading" class="py-10 text-center text-[13px] text-ink-gray-5">Loading…</div>
+    <div v-if="loading" class="py-10 text-center text-sm text-ink-gray-5">Loading…</div>
     <div v-else class="flex flex-col gap-4">
       <!-- scalar fields: Link fields get an inline "+ New"; everything else is
            a frappe-ui FormControl (which renders the espresso checkbox for Check) -->
@@ -155,13 +155,13 @@ function submitForm() {
       <!-- child tables -->
       <div v-for="tf in tableFields" :key="tf.fieldname" class="rounded-md border border-outline-gray-1 p-3">
         <div class="mb-2 flex items-center justify-between">
-          <span class="text-[12.5px] font-medium text-ink-gray-8">{{ tf.label }}</span>
-          <Button variant="subtle" theme="gray" size="sm" label="Add row" @click="addRow(tf)"><template #prefix><Icon name="plus" :size="13" /></template></Button>
+          <span class="text-xs font-medium text-ink-gray-8">{{ tf.label }}</span>
+          <Button variant="subtle" theme="gray" size="sm" label="Add Row" @click="addRow(tf)"><template #prefix><Icon name="plus" :size="13" /></template></Button>
         </div>
-        <div v-if="!(form[tf.fieldname] || []).length" class="py-2 text-center text-[12px] text-ink-gray-4">No rows yet.</div>
+        <div v-if="!(form[tf.fieldname] || []).length" class="py-2 text-center text-xs text-ink-gray-4">No rows yet.</div>
         <div v-for="(row, i) in form[tf.fieldname]" :key="i" class="mb-1.5 flex items-end gap-1.5">
           <div v-for="c in childMeta[tf.fieldname]" :key="c.fieldname" class="min-w-0 flex-1">
-            <div class="mb-0.5 truncate text-[10.5px] text-ink-gray-5">{{ c.label }}</div>
+            <div class="mb-0.5 truncate text-2xs text-ink-gray-5">{{ c.label }}</div>
             <LinkControl v-if="c.fieldtype === 'Link'" compact :doctype="c.options"
               :options="childLinkOptions[`${tf.fieldname}.${c.fieldname}`] || []"
               v-model="row[c.fieldname]" @create="onRequestCreate" />
@@ -169,11 +169,11 @@ function submitForm() {
             <DateField v-else-if="c.fieldtype === 'Date'" v-model="row[c.fieldname]" />
             <TextInput v-else :type="inputType(c.fieldtype)" v-model="row[c.fieldname]" size="md" />
           </div>
-          <button class="mb-px flex h-8 w-[28px] shrink-0 items-center justify-center rounded text-ink-gray-5 hover:bg-surface-gray-2" @click="removeRow(tf, i)"><Icon name="x" :size="14" /></button>
+          <Button variant="ghost" size="sm" label="Remove Row" class="mb-px shrink-0" @click="removeRow(tf, i)"><template #icon><Icon name="x" :size="14" /></template></Button>
         </div>
       </div>
 
-      <p class="text-[11.5px] text-ink-gray-4">Fields and validations follow Frappe HR.</p>
+      <p class="text-xs text-ink-gray-4">Fields and validations follow Frappe HR.</p>
     </div>
     <template #footer>
       <Button variant="ghost" label="Cancel" @click="emit('close')" />

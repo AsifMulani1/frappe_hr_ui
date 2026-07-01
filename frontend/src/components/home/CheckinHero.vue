@@ -36,10 +36,10 @@ const toggle = createResource({
   <Card :pad="false" class="overflow-hidden">
     <div class="flex items-center justify-between border-b border-outline-gray-1 px-5 py-4">
       <div class="flex items-center gap-2.5">
-        <div class="text-[15px] font-medium text-ink-gray-9">Today's attendance</div>
+        <div class="text-md font-medium text-ink-gray-9">Today's Attendance</div>
         <Badge v-if="shift" variant="subtle" theme="gray" size="sm" :label="shift" />
       </div>
-      <Button variant="ghost" size="sm" label="View history" @click="router.push('/attendance')">
+      <Button variant="ghost" size="sm" label="View History" @click="router.push('/attendance')">
         <template #suffix><Icon name="arrowRight" :size="15" /></template>
       </Button>
     </div>
@@ -50,8 +50,8 @@ const toggle = createResource({
         <div class="relative h-[116px] w-[116px]">
           <Ring :value="today?.worked_minutes || 0" :max="today?.target_minutes || 540" />
           <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <div class="tnum text-[22px] font-medium tracking-tight text-ink-gray-9">{{ worked }}</div>
-            <div class="text-[11.5px] text-ink-gray-5">of {{ shiftHrs }}h shift</div>
+            <div class="tnum text-3xl font-medium tracking-tight text-ink-gray-9">{{ worked }}</div>
+            <div class="text-xs text-ink-gray-5">of {{ shiftHrs }}h shift</div>
           </div>
         </div>
         <div class="flex items-center gap-1.5">
@@ -59,7 +59,7 @@ const toggle = createResource({
             class="h-[7px] w-[7px] rounded-full"
             :class="checkedIn ? 'bg-green-500 ring-[3px] ring-green-100' : 'bg-ink-gray-4'"
           />
-          <span class="text-[13px] text-ink-gray-7">
+          <span class="text-sm text-ink-gray-7">
             <template v-if="checkedIn"
               >Checked in at <b class="font-medium text-ink-gray-9">{{ today?.first_in }}</b></template
             >
@@ -89,27 +89,25 @@ const toggle = createResource({
       <!-- week + stats -->
       <div class="flex flex-col gap-4 p-5">
         <div class="flex items-center justify-between">
-          <div class="text-[12.5px] font-medium text-ink-gray-5">This week</div>
-          <button class="border-0 bg-transparent p-0 text-[12.5px] font-medium text-blue-600" @click="router.push('/attendance')">
-            Regularize
-          </button>
+          <div class="text-xs font-medium text-ink-gray-5">This week</div>
+          <Button variant="ghost" size="sm" label="Regularize" @click="router.push('/attendance')" />
         </div>
         <WeekStrip :week="week" />
         <div class="mt-0.5 grid grid-cols-3 gap-3">
           <div class="border-l-2 border-outline-gray-1 pl-3">
-            <div class="text-[11.5px] text-ink-gray-5">Present</div>
-            <div class="tnum mt-0.5 text-[17px] font-medium text-ink-gray-9">{{ summary?.present ?? 0 }} days</div>
-            <div class="text-[11px] text-ink-gray-5">last 30 days</div>
+            <div class="text-xs text-ink-gray-5">Present</div>
+            <div class="tnum mt-0.5 text-xl font-medium text-ink-gray-9">{{ summary?.present ?? 0 }} days</div>
+            <div class="text-2xs text-ink-gray-5">last 30 days</div>
           </div>
           <div class="border-l-2 border-outline-gray-1 pl-3">
-            <div class="text-[11.5px] text-ink-gray-5">Avg hours</div>
-            <div class="tnum mt-0.5 text-[17px] font-medium text-ink-gray-9">{{ summary?.avg_hours || "—" }}</div>
-            <div class="text-[11px] text-ink-gray-5">per day</div>
+            <div class="text-xs text-ink-gray-5">Avg hours</div>
+            <div class="tnum mt-0.5 text-xl font-medium text-ink-gray-9">{{ summary?.avg_hours || "—" }}</div>
+            <div class="text-2xs text-ink-gray-5">per day</div>
           </div>
           <div class="border-l-2 border-outline-gray-1 pl-3">
-            <div class="text-[11.5px] text-ink-gray-5">On leave</div>
-            <div class="tnum mt-0.5 text-[17px] font-medium text-ink-gray-9">{{ summary?.leave ?? 0 }} days</div>
-            <div class="text-[11px] text-ink-gray-5">this month</div>
+            <div class="text-xs text-ink-gray-5">On leave</div>
+            <div class="tnum mt-0.5 text-xl font-medium text-ink-gray-9">{{ summary?.leave ?? 0 }} days</div>
+            <div class="text-2xs text-ink-gray-5">this month</div>
           </div>
         </div>
       </div>

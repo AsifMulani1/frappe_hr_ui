@@ -47,10 +47,10 @@ const columns = [
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Tax & flexible benefits" subtitle="Investment declaration and tax regime">
+    <PageHeader title="Tax & Flexible Benefits" subtitle="Investment declaration and tax regime">
       <template #actions>
         <Button variant="outline" theme="gray" label="Form 16" @click="getForm16"><template #prefix><Icon name="download" :size="15" /></template></Button>
-        <Button variant="solid" theme="blue" label="Update declaration" @click="openDeclaration"><template #prefix><Icon name="edit" :size="15" /></template></Button>
+        <Button variant="solid" theme="blue" label="Update Declaration" @click="openDeclaration"><template #prefix><Icon name="edit" :size="15" /></template></Button>
       </template>
     </PageHeader>
     <AsyncShell :resource="r" :has-employee="!!d.employee" loading-text="Loading tax & benefits…">
@@ -58,7 +58,7 @@ const columns = [
     <div class="grid items-start gap-5" style="grid-template-columns: minmax(0,1fr) 320px">
       <Card :pad="false">
         <div class="p-5">
-          <CardHeader title="Investment declarations" sub="Declare to reduce monthly TDS" />
+          <CardHeader title="Investment Declarations" sub="Declare to reduce monthly TDS" />
           <DataTable :columns="columns" :rows="d.declarations || []" row-key="sec"
             empty-title="No declarations yet" empty-message="Declare your investments to reduce monthly TDS.">
             <template #cell-limit="{ row }"><span class="tnum">{{ formatINR(row.limit) }}</span></template>
@@ -67,16 +67,16 @@ const columns = [
         </div>
       </Card>
       <Card>
-        <CardHeader title="Flexible benefits (FBP)" sub="Monthly allocation" />
+        <CardHeader title="Flexible Benefits (FBP)" sub="Monthly allocation" />
         <AmountRow v-for="[l, v] in d.fbp || []" :key="l" :label="l" :value="formatINR(Number(v) || 0)" />
         <AmountRow label="Total FBP" :value="formatINR(fbpTotal)" bold :border="false" />
-        <div v-if="!(d.fbp || []).length" class="py-2 text-center text-[12.5px] text-ink-gray-5">No flexible benefits configured.</div>
+        <div v-if="!(d.fbp || []).length" class="py-2 text-center text-xs text-ink-gray-5">No flexible benefits configured.</div>
       </Card>
     </div>
     </AsyncShell>
 
-    <FormDrawer :open="add.open" title="Update declaration" subtitle="Declare investments to reduce monthly TDS"
-      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Create declaration"
+    <FormDrawer :open="add.open" title="Update Declaration" subtitle="Declare investments to reduce monthly TDS"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Create Declaration"
       @close="add.open = false" @submit="add.submit(form, ['payroll_period'])" />
   </div>
 </template>

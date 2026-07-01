@@ -18,19 +18,19 @@ function color(b) {
 
 <template>
   <div class="mx-auto max-w-[1100px] px-6 py-[22px]">
-    <PageHeader title="Calibration — 9-box grid" :subtitle="`${r.data?.total ?? 0} employees plotted by performance & potential`" />
+    <PageHeader title="Calibration — 9-box Grid" :subtitle="`${r.data?.total ?? 0} employees plotted by performance & potential`" />
     <AsyncShell :resource="r" loading-text="Loading calibration…">
     <Card>
       <div class="flex gap-3.5">
-        <div class="flex items-center pb-7 pr-1"><span class="text-[11.5px] font-medium text-ink-gray-5" style="writing-mode: vertical-rl; transform: rotate(180deg)">Performance →</span></div>
+        <div class="flex items-center pb-7 pr-1"><span class="text-xs font-medium text-ink-gray-5" style="writing-mode: vertical-rl; transform: rotate(180deg)">Performance →</span></div>
         <div class="flex-1">
           <div class="grid grid-cols-3 gap-2.5">
             <div v-for="b in boxes" :key="`${b.r}-${b.c}`" class="flex min-h-[110px] flex-col justify-between rounded-md border p-3.5" :class="color(b)">
-              <div class="text-[11.5px] font-medium">{{ b.label }}</div>
-              <div><div class="tnum text-[26px] font-medium">{{ b.n }}</div><div class="text-[11px] text-ink-gray-5">employees</div></div>
+              <div class="text-xs font-medium">{{ b.label }}</div>
+              <div><div class="tnum text-5xl font-medium">{{ b.n }}</div><div class="text-2xs text-ink-gray-5">employees</div></div>
             </div>
           </div>
-          <div class="mt-2.5 text-center text-[11.5px] font-medium text-ink-gray-5">Potential →</div>
+          <div class="mt-2.5 text-center text-xs font-medium text-ink-gray-5">Potential →</div>
         </div>
       </div>
     </Card>

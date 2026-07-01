@@ -45,18 +45,18 @@ function openView(h) {
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <PageHeader title="Onboarding" :subtitle="`${hires.length} new hires in the window`">
-      <template #actions><Button variant="solid" theme="blue" label="Start onboarding" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
+      <template #actions><Button variant="solid" theme="blue" label="Start Onboarding" @click="openAdd"><template #prefix><Icon name="plus" :size="15" /></template></Button></template>
     </PageHeader>
     <AsyncShell :resource="r" loading-text="Loading onboarding…">
     <Card :pad="false">
-      <div class="p-5 pb-3.5"><CardHeader title="New hires" sub="Recent and upcoming joiners" /></div>
+      <div class="p-5 pb-3.5"><CardHeader title="New Hires" sub="Recent and upcoming joiners" /></div>
       <EmptyState v-if="!hires.length && !r.loading" icon="login" title="No recent joiners" compact />
       <div v-else class="flex flex-col">
         <div v-for="(h, i) in hires" :key="h.employee_name + i" class="flex items-center gap-4 border-t border-outline-gray-1 px-5 py-4">
           <InitialsAvatar :name="h.employee_name" :size="38" />
-          <div class="w-44 min-w-0"><div class="text-[13.5px] font-medium text-ink-gray-9">{{ h.employee_name }}</div><div class="text-[11.5px] text-ink-gray-5">{{ h.designation }}</div></div>
+          <div class="w-44 min-w-0"><div class="text-sm font-medium text-ink-gray-9">{{ h.employee_name }}</div><div class="text-xs text-ink-gray-5">{{ h.designation }}</div></div>
           <div class="max-w-[200px] flex-1">
-            <div class="mb-1.5 flex justify-between"><span class="text-[11.5px] text-ink-gray-5">Starts {{ h.start }}</span><span class="tnum text-[12px] font-medium">{{ h.progress }}%</span></div>
+            <div class="mb-1.5 flex justify-between"><span class="text-xs text-ink-gray-5">Starts {{ h.start }}</span><span class="tnum text-xs font-medium">{{ h.progress }}%</span></div>
             <ProgressBar :value="h.progress" :color="h.progress === 100 ? 'bg-green-500' : 'bg-blue-500'" />
           </div>
           <StatusBadge :tone="h.progress === 100 ? 'success' : 'warning'" size="sm" :label="h.progress === 100 ? 'Ready' : 'In progress'" />
@@ -66,8 +66,8 @@ function openView(h) {
     </Card>
     </AsyncShell>
 
-    <FormDrawer :open="add.open" title="Start onboarding" subtitle="Begin onboarding for a new hire"
-      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Start onboarding"
+    <FormDrawer :open="add.open" title="Start Onboarding" subtitle="Begin onboarding for a new hire"
+      :fields="fields" v-model="form" :loading="add.create.loading" submit-label="Start Onboarding"
       @close="add.open = false" @submit="add.submit(form, ['job_applicant', 'job_offer', 'employee_name', 'date_of_joining', 'boarding_begins_on'])" />
     <DetailDrawer :open="view.open" doctype="Employee Onboarding" :name="view.name" @close="view.open = false" />
   </div>

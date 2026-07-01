@@ -1,5 +1,6 @@
 <script setup>
 import { reactive } from "vue"
+import { Button } from "frappe-ui"
 import PageHeader from "@/components/ui/PageHeader.vue"
 import Card from "@/components/ui/Card.vue"
 import CardHeader from "@/components/ui/CardHeader.vue"
@@ -45,14 +46,16 @@ function openRep(label) {
 
 <template>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
-    <PageHeader title="Report builder" subtitle="Generate and schedule standard HR & payroll reports" />
+    <PageHeader title="Report Builder" subtitle="Generate and schedule standard HR & payroll reports" />
     <div class="grid gap-5" style="grid-template-columns: repeat(auto-fill, minmax(290px, 1fr))">
       <Card v-for="c in CATS" :key="c.cat">
         <CardHeader :title="c.cat" :icon="c.icon" />
         <div class="flex flex-col">
-          <button v-for="(rep, i) in c.reports" :key="rep" class="flex items-center gap-2.5 py-2.5 text-left hover:text-blue-600" :class="i ? 'border-t border-outline-gray-1' : ''" @click="openRep(rep)">
-            <Icon name="file" :size="15" class="text-ink-gray-5" /><span class="flex-1 text-[13px] text-ink-gray-9">{{ rep }}</span><Icon name="download" :size="14" class="text-ink-gray-4" />
-          </button>
+          <Button v-for="(rep, i) in c.reports" :key="rep" variant="ghost" class="w-full !justify-start" :class="i ? 'border-t border-outline-gray-1' : ''" @click="openRep(rep)">
+            <template #prefix><Icon name="file" :size="15" class="text-ink-gray-5" /></template>
+            <span class="flex-1 text-left">{{ rep }}</span>
+            <template #suffix><Icon name="download" :size="14" class="text-ink-gray-4" /></template>
+          </Button>
         </div>
       </Card>
     </div>

@@ -77,19 +77,19 @@ function dismiss() { dismissed.value = true; localStorage.setItem(DISMISS_KEY, "
 </script>
 
 <template>
-  <div v-if="show" class="rounded-xl border border-outline-gray-1 bg-surface-white p-5">
+  <div v-if="show" class="rounded-xl border border-outline-gray-1 bg-surface-base p-5">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
-        <div class="text-[15px] font-medium text-ink-gray-9">
+        <div class="text-md font-medium text-ink-gray-9">
           {{ allDone ? "You're payroll-ready 🎉" : "Get set up" }}
         </div>
-        <p class="mt-0.5 text-[12.5px] text-ink-gray-5">
+        <p class="mt-0.5 text-xs text-ink-gray-5">
           {{ allDone
             ? "Everything's configured. Run payroll from Payroll → Run when it's month-end."
             : `${doneCount} of ${total} done — finish setting up ${s.company || "your company"}.` }}
         </p>
       </div>
-      <button class="shrink-0 rounded px-2 py-1 text-[12px] text-ink-gray-4 hover:bg-surface-gray-2 hover:text-ink-gray-7" @click="dismiss">Dismiss</button>
+      <Button class="shrink-0" size="sm" variant="ghost" theme="gray" label="Dismiss" @click="dismiss" />
     </div>
 
     <!-- progress -->
@@ -107,10 +107,10 @@ function dismiss() { dismissed.value = true; localStorage.setItem(DISMISS_KEY, "
         </div>
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
-            <span class="text-[13px] font-medium" :class="it.done && !it.soft ? 'text-ink-gray-5' : 'text-ink-gray-9'">{{ it.label }}</span>
-            <span v-if="it.optional && !it.done" class="rounded bg-surface-gray-2 px-1.5 py-0.5 text-[10px] text-ink-gray-5">to file</span>
+            <span class="text-sm font-medium" :class="it.done && !it.soft ? 'text-ink-gray-5' : 'text-ink-gray-9'">{{ it.label }}</span>
+            <span v-if="it.optional && !it.done" class="rounded bg-surface-gray-2 px-1.5 py-0.5 text-2xs text-ink-gray-5">to file</span>
           </div>
-          <div class="truncate text-[11.5px] text-ink-gray-5">{{ it.desc }}</div>
+          <div class="truncate text-xs text-ink-gray-5">{{ it.desc }}</div>
         </div>
         <Button v-if="!it.done || it.soft" size="sm" variant="subtle" theme="gray"
           :label="it.cta" :loading="it.inline && applyDefaults.loading" @click="act(it)" />

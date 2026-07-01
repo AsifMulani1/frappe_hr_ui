@@ -55,15 +55,15 @@ const isAdmin = computed(() =>
   <div class="mx-auto max-w-[1320px] px-6 py-[22px]">
     <!-- loading -->
     <div v-if="home.loading && !home.data" class="flex h-[60vh] items-center justify-center text-ink-gray-5">
-      <div class="flex items-center gap-2 text-[13px]">
+      <div class="flex items-center gap-2 text-sm">
         <Icon name="dot" :size="18" class="animate-pulse" /> Loading your dashboard…
       </div>
     </div>
 
     <!-- error -->
     <div v-else-if="home.error" class="flex h-[60vh] flex-col items-center justify-center gap-2 text-center">
-      <div class="text-[15px] font-medium text-ink-gray-8">Couldn't load your dashboard</div>
-      <div class="max-w-md text-[13px] text-ink-gray-5">{{ home.error.messages?.[0] || home.error }}</div>
+      <div class="text-md font-medium text-ink-gray-8">Couldn't load your dashboard</div>
+      <div class="max-w-md text-sm text-ink-gray-5">{{ home.error.messages?.[0] || home.error }}</div>
       <Button class="mt-2" variant="subtle" theme="gray" label="Retry" @click="home.reload()" />
     </div>
 
@@ -74,8 +74,8 @@ const isAdmin = computed(() =>
       <!-- no employee linked (shown only to non-admins; admins get the checklist above) -->
       <div v-if="!emp && !isAdmin" class="flex h-[60vh] flex-col items-center justify-center gap-2 text-center">
         <Icon name="user" :size="26" class="text-ink-gray-4" />
-        <div class="text-[15px] font-medium text-ink-gray-8">No employee record linked</div>
-        <div class="max-w-md text-[13px] text-ink-gray-5">
+        <div class="text-md font-medium text-ink-gray-8">No employee record linked</div>
+        <div class="max-w-md text-sm text-ink-gray-5">
           This user isn't linked to an Employee. Sign in as an employee (e.g. aarav.mehta@frappe.io)
           to see the self-service dashboard.
         </div>
@@ -85,13 +85,13 @@ const isAdmin = computed(() =>
       <template v-else-if="emp">
       <div class="mb-[18px] flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 class="text-[22px] font-medium tracking-tight text-ink-gray-9">
+          <h1 class="text-3xl font-medium tracking-tight text-ink-gray-9">
             {{ greeting }}, {{ emp.first_name || emp.employee_name }}
           </h1>
-          <div class="mt-1 text-[13.5px] text-ink-gray-5">{{ dateLine }}</div>
+          <div class="mt-1 text-sm text-ink-gray-5">{{ dateLine }}</div>
         </div>
         <div class="flex gap-2">
-          <Button variant="outline" theme="gray" label="Apply for leave" @click="router.push('/leave')">
+          <Button variant="outline" theme="gray" label="Apply for Leave" @click="router.push('/leave')">
             <template #prefix><Icon name="calendar" :size="15" /></template>
           </Button>
           <Button
